@@ -1,0 +1,29 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main class="main-shell">
+  <section class="hero reveal-up">
+    <p class="eyebrow">Personal Blog / Cat Perspective</p>
+    <h1>Field Notes From The World's Most Overqualified House Cat</h1>
+    <p>
+      This is a joke project for my portfolio where I post as my cat, Captain Whiskers.
+      Equal parts storytelling, web development, and unreasonable confidence.
+    </p>
+  </section>
+
+  <section class="posts-grid">
+    <% posts.forEach((post, index) => { %>
+      <article class="post-card reveal-up" style="--delay: <%= index * 90 %>ms">
+        <p class="post-meta">
+          <span><%= new Date(post.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) %></span>
+          <span><%= post.mood %></span>
+        </p>
+        <h2><a href="/post/<%= post.slug %>"><%= post.title %></a></h2>
+        <p><%= post.shortBody %></p>
+        <a class="read-link" href="/post/<%= post.slug %>">Read full entry</a>
+      </article>
+    <% }) %>
+  </section>
+</main>
+
+<%- include("partials/footer") %>

@@ -1,0 +1,207 @@
+:root {
+  --paper: #f8f4e8;
+  --ink: #1f1f1f;
+  --accent: #e07a5f;
+  --accent-2: #3d405b;
+  --highlight: #81b29a;
+  --card: #fffdf7;
+  --shadow: 0 14px 40px rgba(31, 31, 31, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(224, 122, 95, 0.22), transparent 30%),
+    radial-gradient(circle at 85% 10%, rgba(129, 178, 154, 0.26), transparent 33%),
+    linear-gradient(180deg, #fefcf5 0%, #f3ecda 100%);
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.site-nav-wrap {
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(8px);
+  background: rgba(248, 244, 232, 0.78);
+  border-bottom: 1px solid rgba(31, 31, 31, 0.08);
+  z-index: 5;
+}
+
+.site-nav {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--accent-2);
+  letter-spacing: 0.01em;
+}
+
+.brand-icon {
+  display: inline-grid;
+  place-items: center;
+  color: var(--accent);
+  font-family: "Fraunces", serif;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-links a:hover {
+  border-color: var(--accent);
+}
+
+.main-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.2rem 1.2rem 4rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: var(--accent-2);
+  margin-bottom: 0.25rem;
+}
+
+.hero {
+  background: linear-gradient(145deg, #fffdf8, #f9f0de);
+  border: 1px solid rgba(31, 31, 31, 0.08);
+  box-shadow: var(--shadow);
+  border-radius: 20px;
+  padding: 2.2rem;
+  margin-bottom: 1.8rem;
+}
+
+.hero h1,
+.single-post h1,
+.about-card h1 {
+  font-family: "Fraunces", Georgia, serif;
+  line-height: 1.15;
+  margin: 0.2rem 0 1rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  max-width: 18ch;
+}
+
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.post-card,
+.single-post,
+.about-card {
+  background: var(--card);
+  border: 1px solid rgba(31, 31, 31, 0.08);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 1.3rem;
+}
+
+.post-meta {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  color: #4d4d4d;
+}
+
+.post-card h2 {
+  margin: 0.9rem 0 0.65rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.4rem;
+  line-height: 1.25;
+}
+
+.post-card h2 a {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.post-card h2 a:hover {
+  color: var(--accent);
+}
+
+.read-link {
+  display: inline-block;
+  margin-top: 0.9rem;
+  color: var(--accent-2);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.read-link:hover {
+  color: var(--accent);
+}
+
+.single-post p {
+  margin: 0.8rem 0;
+}
+
+.site-footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.2rem 1.8rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.reveal-up {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: rise 0.65s ease forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 700px) {
+  .site-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero,
+  .post-card,
+  .single-post,
+  .about-card {
+    padding: 1.05rem;
+  }
+}

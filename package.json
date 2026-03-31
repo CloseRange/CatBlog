@@ -1,0 +1,26 @@
+{
+  "name": "catblog",
+  "version": "1.0.0",
+  "description": "A playful portfolio-ready personal blog written as a cat.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": [
+    "express",
+    "ejs",
+    "blog",
+    "portfolio"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ejs": "^5.0.1",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
