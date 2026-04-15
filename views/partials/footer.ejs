@@ -1,5 +1,26 @@
     <footer class="site-footer">
-      <p>Built with Express + EJS. Written by a cat. Approved by no one.</p>
+      <% const basePath = typeof siteBasePath !== 'undefined' ? siteBasePath : ''; %>
+      <% const homeHref = basePath ? basePath : '/'; %>
+      <% const galleryHref = basePath ? `${basePath}/gallery` : '/gallery'; %>
+      <% const aboutHref = basePath ? `${basePath}/about` : '/about'; %>
+      <% const onJavaSite = typeof isJavaSite !== 'undefined' ? isJavaSite : false; %>
+      <p>
+        <% if (onJavaSite) { %>
+          Java's stories and photos are preserved here as a memorial archive.
+        <% } else { %>
+          Main site for future cat adventures.
+        <% } %>
+      </p>
+      <div class="footer-links">
+        <a href="<%= homeHref %>">Home</a>
+        <a href="<%= galleryHref %>">Gallery</a>
+        <a href="<%= aboutHref %>">About</a>
+        <% if (!onJavaSite) { %>
+          <a href="/java">Java Memorial</a>
+          <a href="/admin">Admin</a>
+        <% } %>
+      </div>
+      <p class="footer-note">&copy; <%= new Date().getFullYear() %> <%= typeof siteName !== 'undefined' ? siteName : 'CatBlog' %></p>
     </footer>
     <script src="/script.js"></script>
   </body>

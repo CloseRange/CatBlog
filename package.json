@@ -5,7 +5,11 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "migrate": "echo 'Run sql/migrate.sql in Supabase SQL Editor'",
+    "seed": "echo 'Run sql/seed.sql in Supabase SQL Editor'",
+    "reset": "echo 'Run sql/reset.sql in Supabase SQL Editor'",
+    "setup": "echo 'Run sql/migrate.sql then sql/seed.sql in Supabase SQL Editor'"
   },
   "keywords": [
     "express",
@@ -17,8 +21,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@supabase/supabase-js": "^2.54.0",
     "ejs": "^5.0.1",
-    "express": "^5.2.1"
+    "dotenv": "^16.4.7",
+    "express-session": "^1.18.1",
+    "express": "^5.2.1",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

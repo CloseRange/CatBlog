@@ -1,0 +1,64 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell main-home">
+  <section class="main-hero reveal-up">
+    <p class="main-eyebrow">Future Logbook</p>
+    <h1>The Next Cat Story Starts Here</h1>
+    <p>
+      This is the new main site for future adventures. Java's story lives on in
+      the memorial archive.
+    </p>
+    <div class="main-actions">
+      <a class="main-btn" href="/java">Visit Java Memorial Site</a>
+      <a class="main-btn main-btn-ghost" href="/about">About This Project</a>
+    </div>
+  </section>
+
+  <% if (featuredPost) { %>
+    <section class="main-card reveal-up" style="--delay: 80ms">
+      <p class="main-eyebrow">Featured Post</p>
+      <h2><a href="/post/<%= featuredPost.slug %>"><%= featuredPost.title %></a></h2>
+      <p><%= featuredPost.shortBody %></p>
+      <p class="main-meta-row">
+        <span><%= formatDisplayDate(featuredPost.date, { month: "short", day: "numeric", year: "numeric" }) %></span>
+        <span><%= featuredPost.readMinutes %> min read</span>
+        <span><%= featuredPost.mood %></span>
+      </p>
+      <a class="read-link" href="/post/<%= featuredPost.slug %>">Read Post</a>
+    </section>
+  <% } %>
+
+  <% if (posts && posts.length) { %>
+    <section class="section-head reveal-up" style="--delay: 110ms">
+      <p class="eyebrow">Latest Posts</p>
+      <h2>Main Site Feed</h2>
+    </section>
+
+    <section class="posts-grid" aria-label="Main site posts">
+      <% posts.forEach((post, index) => { %>
+        <article class="post-card reveal-up" style="--delay: <%= 130 + (index * 60) %>ms">
+          <p class="post-meta">
+            <span><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></span>
+            <span><%= post.readMinutes %> min read</span>
+          </p>
+          <h2><a href="/post/<%= post.slug %>"><%= post.title %></a></h2>
+          <p><%= post.shortBody %></p>
+          <p class="post-chip"><%= post.mood %></p>
+          <a class="read-link" href="/post/<%= post.slug %>">Read Post</a>
+        </article>
+      <% }) %>
+    </section>
+  <% } else { %>
+    <section class="main-card reveal-up" style="--delay: 100ms">
+      <h2>No Posts Yet</h2>
+      <p>
+        The main site is now connected to your database. Create a post in admin
+        and it will appear here automatically.
+      </p>
+      <a class="main-btn main-btn-ghost" href="/admin">Open Admin</a>
+    </section>
+  <% } %>
+</main>
+
+<%- include("partials/footer") %>

@@ -1,0 +1,81 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell">
+  <section class="section-head reveal-up">
+    <p class="eyebrow">Admin</p>
+    <h1>Gallery Manager</h1>
+    <p>Manage files in your Supabase bucket: upload, rename, and delete images.</p>
+  </section>
+
+  <section class="about-card reveal-up" style="--delay: 70ms">
+    <div class="admin-toolbar">
+      <a class="button-ghost" href="/admin">Back To Admin</a>
+      <a class="button-ghost" href="/admin/new">New Post</a>
+      <form method="post" action="/admin/logout">
+        <button class="button-ghost" type="submit">Logout</button>
+      </form>
+    </div>
+
+    <% if (uploaded) { %>
+      <p class="admin-success" role="status">Image uploaded.</p>
+    <% } %>
+    <% if (renamed) { %>
+      <p class="admin-success" role="status">Image renamed.</p>
+    <% } %>
+    <% if (deleted) { %>
+      <p class="admin-success" role="status">Image deleted.</p>
+    <% } %>
+    <% if (error) { %>
+      <p class="admin-error" role="alert"><%= error %></p>
+    <% } %>
+
+    <form class="admin-form-grid admin-upload-form" method="post" action="/admin/gallery/upload" enctype="multipart/form-data">
+      <h2>Upload New Image</h2>
+
+      <label for="galleryUploadFile">Image File</label>
+      <input id="galleryUploadFile" name="imageFile" type="file" accept="image/*" required />
+
+      <label for="galleryUploadFolder">Folder</label>
+      <input id="galleryUploadFolder" name="folder" type="text" value="java" />
+      <p class="admin-hint">Example: <code>java</code> or <code>cats/2026</code></p>
+
+      <button class="button-primary" type="submit">Upload Image</button>
+    </form>
+
+    <h2 class="admin-gallery-title">Bucket Images (<%= images.length %>)</h2>
+
+    <% if (!images.length) { %>
+      <p>No images found in this bucket yet.</p>
+    <% } %>
+
+    <section class="admin-gallery-grid" aria-label="Bucket images">
+      <% images.forEach((image) => { %>
+        <article class="admin-gallery-card">
+          <img src="<%= image.publicUrl %>" alt="<%= image.name %>" loading="lazy" />
+          <div class="admin-gallery-copy">
+            <p class="admin-gallery-path"><code><%= image.storagePath %></code></p>
+            <p class="admin-hint">
+              <% if (image.mimeType) { %><span><%= image.mimeType %></span><% } %>
+              <% if (image.size) { %><span> • <%= Math.round(image.size / 1024) %> KB</span><% } %>
+            </p>
+
+            <form class="admin-rename-form" method="post" action="/admin/gallery/rename">
+              <input type="hidden" name="oldPath" value="<%= image.storagePath %>" />
+              <label>Rename Path</label>
+              <input name="newPath" type="text" value="<%= image.storagePath %>" required />
+              <button class="button-ghost" type="submit">Rename</button>
+            </form>
+
+            <form method="post" action="/admin/gallery/delete" onsubmit="return confirm('Delete this image from bucket? This also removes post references.');">
+              <input type="hidden" name="storagePath" value="<%= image.storagePath %>" />
+              <button class="button-danger" type="submit">Delete</button>
+            </form>
+          </div>
+        </article>
+      <% }) %>
+    </section>
+  </section>
+</main>
+
+<%- include("partials/footer") %>

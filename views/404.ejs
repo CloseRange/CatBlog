@@ -1,14 +1,21 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
 
-<main class="main-shell">
+<main id="main-content" class="main-shell">
   <section class="about-card reveal-up">
     <p class="eyebrow">404</p>
     <h1>This Corner Of The House Does Not Exist</h1>
-    <p>
-      Captain Whiskers searched under the couch and behind the curtains. No page found.
-    </p>
-    <a class="read-link" href="/">Return to the logbook</a>
+    <% if (isJavaSite) { %>
+      <p>
+        Java searched under the couch and behind the curtains. No archive page found.
+      </p>
+      <a class="read-link" href="<%= siteBasePath || '/' %>">Return to Java's logbook</a>
+    <% } else { %>
+      <p>
+        No page found here yet. The main site is still being prepared for future stories.
+      </p>
+      <a class="read-link" href="<%= siteBasePath || '/' %>">Return home</a>
+    <% } %>
   </section>
 </main>
 

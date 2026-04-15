@@ -1,0 +1,35 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell">
+  <article class="about-card reveal-up main-post-card">
+    <p class="main-eyebrow">Main Site Post</p>
+    <h1><%= post.title %></h1>
+    <p class="main-meta-row">
+      <span><%= formatDisplayDate(post.date, { month: "long", day: "numeric", year: "numeric" }) %></span>
+      <span><%= post.readMinutes %> min read</span>
+      <span><%= post.mood %></span>
+    </p>
+
+    <% if (post.images && post.images.length) { %>
+      <section class="post-gallery" aria-label="Post images">
+        <% post.images.forEach((image) => { %>
+          <figure>
+            <img src="<%= image.src %>" alt="<%= image.alt %>" loading="lazy" />
+            <% if (image.caption) { %>
+              <figcaption><%= image.caption %></figcaption>
+            <% } %>
+          </figure>
+        <% }) %>
+      </section>
+    <% } %>
+
+    <% post.body.split("\n").forEach((paragraph) => { %>
+      <p><%= paragraph %></p>
+    <% }) %>
+
+    <a class="read-link" href="/">Back to main feed</a>
+  </article>
+</main>
+
+<%- include("partials/footer") %>

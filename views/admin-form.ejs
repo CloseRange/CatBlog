@@ -1,0 +1,106 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell">
+  <section class="section-head reveal-up">
+    <p class="eyebrow">Admin</p>
+    <h1><%= mode === "edit" ? "Edit Post" : "Create Post" %></h1>
+    <p>Manage content and image entries from Supabase.</p>
+  </section>
+
+  <section class="about-card reveal-up" style="--delay: 70ms">
+    <div class="admin-toolbar">
+      <a class="button-ghost" href="/admin">Back To Admin</a>
+      <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
+      <a class="button-ghost" href="/">View Site</a>
+    </div>
+
+    <% if (saved) { %>
+      <p class="admin-success" role="status">Saved.</p>
+    <% } %>
+    <% if (aiGenerated) { %>
+      <p class="admin-success" role="status">AI draft generated. Review and save.</p>
+    <% } %>
+    <% if (error) { %>
+      <p class="admin-error" role="alert"><%= error %></p>
+    <% } %>
+
+    <form class="admin-form-grid admin-ai-form" method="post" action="/admin/generate">
+      <h2 class="admin-gallery-title">Generate With AI</h2>
+      <p class="admin-hint">Describe what the post should be about, then generate a draft.</p>
+
+      <input type="hidden" name="postId" value="<%= formData.postId %>" />
+      <input type="hidden" name="title" value="<%= formData.title %>" />
+      <input type="hidden" name="slug" value="<%= formData.slug %>" />
+      <input type="hidden" name="date" value="<%= formData.date %>" />
+      <input type="hidden" name="mood" value="<%= formData.mood %>" />
+      <input type="hidden" name="body" value="<%= formData.body %>" />
+      <input type="hidden" name="selectedPath" value="<%= selectedPath || "" %>" />
+
+      <label for="aiPrompt">AI Prompt</label>
+      <textarea id="aiPrompt" name="aiPrompt" rows="3" placeholder="Example: something about java eating bread" <%= aiEnabled ? "" : "disabled" %>><%= aiPrompt || "" %></textarea>
+
+      <% if (!aiEnabled) { %>
+        <p class="admin-hint">AI disabled. Add <code>OPENAI_API_KEY</code> in <code>.env</code> to enable.</p>
+      <% } %>
+
+      <button class="button-primary" type="submit" <%= aiEnabled ? "" : "disabled" %>>Generate Draft</button>
+    </form>
+
+    <form class="admin-form-grid" method="post" action="/admin/save">
+      <input type="hidden" name="postId" value="<%= formData.postId %>" />
+
+      <label for="title">Title</label>
+      <input id="title" name="title" type="text" value="<%= formData.title %>" required />
+
+      <label for="slug">Slug</label>
+      <input id="slug" name="slug" type="text" value="<%= formData.slug %>" />
+
+      <label for="date">Date</label>
+      <input id="date" name="date" type="date" value="<%= formData.date %>" required />
+
+      <label for="mood">Mood</label>
+      <input id="mood" name="mood" type="text" value="<%= formData.mood %>" required />
+
+      <label for="body">Body</label>
+      <textarea id="body" name="body" rows="8" required><%= formData.body %></textarea>
+
+      <h2 class="admin-gallery-title">Select Post Image</h2>
+      <p class="admin-hint">Choose one image. It will be used as the post image and cover image.</p>
+
+      <label class="admin-checkbox admin-no-image-option">
+        <input type="radio" name="selectedPath" value="" <%= !selectedPath ? "checked" : "" %> />
+        No image for this post
+      </label>
+
+      <% if (!galleryImages.length) { %>
+        <p class="admin-error">No gallery images found. Upload in <a href="/admin/gallery">Manage Gallery</a>.</p>
+      <% } %>
+
+      <section class="admin-gallery-grid" aria-label="Gallery image picker">
+        <% galleryImages.forEach((image, index) => { %>
+          <% const selected = selectedImagesByPath[image.storagePath]; %>
+          <article class="admin-gallery-card admin-gallery-picker-card">
+            <img src="<%= image.publicUrl %>" alt="<%= image.name %>" loading="lazy" />
+            <div class="admin-gallery-copy">
+              <p class="admin-gallery-path"><code><%= image.storagePath %></code></p>
+              <label class="admin-checkbox">
+                <input
+                  type="radio"
+                  name="selectedPath"
+                  value="<%= image.storagePath %>"
+                  <%= selectedPath === image.storagePath ? "checked" : "" %>
+                />
+                Use This Image
+              </label>
+            </div>
+          </article>
+        <% }) %>
+      </section>
+
+      <button class="button-primary" type="submit">Save Post</button>
+    </form>
+  </section>
+</main>
+
+<%- include("partials/footer") %>

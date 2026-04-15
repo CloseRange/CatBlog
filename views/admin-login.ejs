@@ -1,0 +1,24 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell">
+  <section class="about-card admin-auth-card reveal-up">
+    <p class="eyebrow">Admin Access</p>
+    <h1>Login To Manage The Blog</h1>
+    <p>
+      Enter your blog password to access the admin panel.
+    </p>
+
+    <% if (error) { %>
+      <p class="admin-error" role="alert"><%= error %></p>
+    <% } %>
+
+    <form class="admin-form-grid" method="post" action="/admin/login">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required />
+      <button class="button-primary" type="submit">Login</button>
+    </form>
+  </section>
+</main>
+
+<%- include("partials/footer") %>

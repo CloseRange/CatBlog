@@ -1,17 +1,34 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
+<% const basePath = typeof siteBasePath !== 'undefined' ? siteBasePath : ''; %>
 
-<main class="main-shell">
+<main id="main-content" class="main-shell">
   <article class="single-post reveal-up">
-    <p class="post-meta">
-      <span><%= new Date(post.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) %></span>
-      <span><%= post.mood %></span>
-    </p>
-    <h1><%= post.title %></h1>
+    <header class="single-post-header">
+      <p class="eyebrow">Java's Journal</p>
+      <h1><%= post.title %></h1>
+      <p class="post-meta">
+        <span><%= formatDisplayDate(post.date, { month: "long", day: "numeric", year: "numeric" }) %></span>
+        <span><%= post.readMinutes %> min read</span>
+        <span><%= post.mood %></span>
+      </p>
+    </header>
+    <% if (post.images.length) { %>
+      <section class="post-gallery" aria-label="Photos for this post">
+        <% post.images.forEach((image) => { %>
+          <figure>
+            <img src="<%= image.src %>" alt="<%= image.alt %>" loading="lazy" />
+            <% if (image.caption) { %>
+              <figcaption><%= image.caption %></figcaption>
+            <% } %>
+          </figure>
+        <% }) %>
+      </section>
+    <% } %>
     <% post.body.split("\n").forEach((paragraph) => { %>
       <p><%= paragraph %></p>
     <% }) %>
-    <a class="read-link" href="/">Back to all posts</a>
+    <a class="read-link" href="<%= basePath || '/' %>">Back to all posts</a>
   </article>
 </main>
 

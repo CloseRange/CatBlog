@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Java window watch</title>
+  <desc id="desc">Illustrated placeholder image showing Java watching birds by a window.</desc>
+  <rect width="1200" height="800" fill="#e8f5ff"/>
+  <rect x="180" y="120" width="840" height="520" fill="#c8e7fb" stroke="#8cbad8" stroke-width="20"/>
+  <circle cx="390" cy="560" r="110" fill="#2f2f2f"/>
+  <circle cx="560" cy="560" r="110" fill="#2f2f2f"/>
+  <circle cx="870" cy="260" r="20" fill="#3d405b"/>
+  <circle cx="920" cy="220" r="16" fill="#3d405b"/>
+  <text x="600" y="705" text-anchor="middle" font-size="48" fill="#3d405b" font-family="Georgia, serif">Java: Window Watch</text>
+</svg>

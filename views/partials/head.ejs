@@ -1,19 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <% const resolvedSiteName = typeof siteName !== 'undefined' ? siteName : 'CatBlog'; %>
+    <% const resolvedStylesheetPath = typeof stylesheetPath !== 'undefined' ? stylesheetPath : '/styles.css'; %>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= pageTitle %> | CatBlog</title>
+    <title><%= pageTitle %> | <%= resolvedSiteName %></title>
     <meta
       name="description"
-      content="A comedic cat-written personal blog built with Express for portfolio use."
+      content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'A comedic personal blog written as Java, a dramatic cat with pica.' %>"
     />
+    <meta property="og:title" content="<%= pageTitle %> | <%= resolvedSiteName %>" />
+    <meta
+      property="og:description"
+      content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'A comedic personal blog written as Java, a dramatic cat with pica.' %>"
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="<%= resolvedStylesheetPath %>" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>

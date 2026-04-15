@@ -1,28 +1,93 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
+<% const basePath = typeof siteBasePath !== 'undefined' ? siteBasePath : ''; %>
+<% const postBase = basePath ? `${basePath}/post` : '/post'; %>
 
-<main class="main-shell">
+<main id="main-content" class="main-shell">
   <section class="hero reveal-up">
-    <p class="eyebrow">Personal Blog / Cat Perspective</p>
-    <h1>Field Notes From The World's Most Overqualified House Cat</h1>
+    <p class="eyebrow">Memorial Archive</p>
+    <h1>Java - The adventures of the most overqualified house cat</h1>
     <p>
-      This is a joke project for my portfolio where I post as my cat, Captain Whiskers.
-      Equal parts storytelling, web development, and unreasonable confidence.
+      Java was the main influance for this project. Sadly, in the middle of development, we were forced to euthanize her. Let this archive serve as a memory of her and the love she gave us.
     </p>
+    <div class="hero-actions">
+      <% if (featuredPost) { %>
+        <a class="button-primary" href="<%= postBase %>/<%= featuredPost.slug %>">Read Featured Entry</a>
+      <% } %>
+      <a class="button-ghost" href="<%= basePath ? `${basePath}/about` : '/about' %>">About this project</a>
+    </div>
   </section>
 
-  <section class="posts-grid">
+  <section class="stat-strip reveal-up" style="--delay: 90ms">
+    <article>
+      <p class="stat-value"><%= posts.length + (featuredPost ? 1 : 0) %></p>
+      <p class="stat-label">Published Entries</p>
+    </article>
+    <article>
+      <p class="stat-value">100%</p>
+      <p class="stat-label">Cat-Approved Opinions</p>
+    </article>
+    <article>
+      <p class="stat-value">24/7</p>
+      <p class="stat-label">Bird Surveillance</p>
+    </article>
+  </section>
+
+  <% if (featuredPost) { %>
+    <section class="featured-post reveal-up" style="--delay: 120ms">
+      <% if (featuredPost.coverImage) { %>
+        <img
+          class="featured-image"
+          src="<%= featuredPost.coverImage.src %>"
+          alt="<%= featuredPost.coverImage.alt %>"
+          loading="lazy"
+        />
+      <% } %>
+      <p class="eyebrow">Featured Post</p>
+      <h2><a href="<%= postBase %>/<%= featuredPost.slug %>"><%= featuredPost.title %></a></h2>
+      <p><%= featuredPost.shortBody %></p>
+      <p class="post-meta">
+        <span><%= formatDisplayDate(featuredPost.date, { month: "short", day: "numeric", year: "numeric" }) %></span>
+        <span><%= featuredPost.readMinutes %> min read</span>
+        <span><%= featuredPost.mood %></span>
+      </p>
+      <a class="read-link" href="<%= postBase %>/<%= featuredPost.slug %>">Continue reading</a>
+    </section>
+  <% } %>
+
+  <section class="section-head reveal-up" style="--delay: 140ms">
+    <p class="eyebrow">Archive Entries</p>
+    <h2>Stories From Java's Logbook</h2>
+  </section>
+
+  <section class="posts-grid" aria-label="Recent blog posts">
     <% posts.forEach((post, index) => { %>
-      <article class="post-card reveal-up" style="--delay: <%= index * 90 %>ms">
+      <article class="post-card reveal-up" style="--delay: <%= 170 + (index * 90) %>ms">
+        <% if (post.coverImage) { %>
+          <img
+            class="post-image"
+            src="<%= post.coverImage.src %>"
+            alt="<%= post.coverImage.alt %>"
+            loading="lazy"
+          />
+        <% } %>
         <p class="post-meta">
-          <span><%= new Date(post.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) %></span>
-          <span><%= post.mood %></span>
+          <span><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></span>
+          <span><%= post.readMinutes %> min read</span>
         </p>
-        <h2><a href="/post/<%= post.slug %>"><%= post.title %></a></h2>
+        <h2><a href="<%= postBase %>/<%= post.slug %>"><%= post.title %></a></h2>
         <p><%= post.shortBody %></p>
-        <a class="read-link" href="/post/<%= post.slug %>">Read full entry</a>
+        <p class="post-chip"><%= post.mood %></p>
+        <a class="read-link" href="<%= postBase %>/<%= post.slug %>">Read full entry</a>
       </article>
     <% }) %>
+  </section>
+
+  <section class="gallery-cta reveal-up" style="--delay: 220ms">
+    <p class="eyebrow">Photo Roll</p>
+    <h2>Want More Java Photos?</h2>
+    <p>Browse all images in one place, grouped automatically from post media.</p>
+    <a class="button-primary" href="<%= basePath ? `${basePath}/gallery` : '/gallery' %>">Open Gallery</a>
   </section>
 </main>
 

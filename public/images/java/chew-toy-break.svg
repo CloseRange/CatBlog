@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Java with chew toy</title>
+  <desc id="desc">Illustrated placeholder image showing Java and a chew toy.</desc>
+  <rect width="1200" height="800" fill="#e5f0dd"/>
+  <ellipse cx="600" cy="520" rx="360" ry="150" fill="#b8d8a5"/>
+  <circle cx="500" cy="360" r="90" fill="#2d2d2d"/>
+  <circle cx="680" cy="360" r="90" fill="#2d2d2d"/>
+  <rect x="520" y="470" width="160" height="50" rx="25" fill="#e07a5f"/>
+  <text x="600" y="705" text-anchor="middle" font-size="48" fill="#3d405b" font-family="Georgia, serif">Java: Approved Chew Toy</text>
+</svg>

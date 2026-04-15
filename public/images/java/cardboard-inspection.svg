@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Java inspecting cardboard</title>
+  <desc id="desc">Illustrated placeholder image showing Java by a cardboard box.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8e8cf"/>
+      <stop offset="100%" stop-color="#efd8b2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="220" y="360" width="760" height="280" rx="22" fill="#d3a97a"/>
+  <circle cx="520" cy="330" r="95" fill="#2f2f2f"/>
+  <circle cx="660" cy="330" r="95" fill="#2f2f2f"/>
+  <text x="600" y="705" text-anchor="middle" font-size="48" fill="#3d405b" font-family="Georgia, serif">Java: Cardboard Inspection</text>
+</svg>

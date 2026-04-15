@@ -1,0 +1,44 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell">
+  <section class="section-head reveal-up">
+    <p class="eyebrow">Photo Gallery</p>
+    <h1>Java's Camera Roll</h1>
+  </section>
+
+  <% if (!galleryItems.length) { %>
+    <section class="about-card reveal-up" style="--delay: 90ms">
+      <h2>No photos yet</h2>
+      <% if (isJavaSite) { %>
+        <p>This memorial archive currently has no photos loaded.</p>
+      <% } else { %>
+        <p>
+          Upload images from <a href="/admin/gallery">Admin Gallery</a> and they
+          will show up here automatically.
+        </p>
+        <p>Suggested folder: <code>java/</code>.</p>
+      <% } %>
+    </section>
+  <% } %>
+
+  <% if (galleryItems.length) { %>
+    <section class="gallery-grid" aria-label="Java photos">
+      <% galleryItems.forEach((item, index) => { %>
+        <article class="gallery-card reveal-up" style="--delay: <%= 80 + (index * 60) %>ms">
+          <a
+            class="gallery-image-link"
+            href="<%= item.src %>"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="View image <%= index + 1 %>"
+          >
+            <img src="<%= item.src %>" alt="<%= item.alt %>" loading="lazy" />
+          </a>
+        </article>
+      <% }) %>
+    </section>
+  <% } %>
+</main>
+
+<%- include("partials/footer") %>

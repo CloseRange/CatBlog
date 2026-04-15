@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Java zoomies</title>
+  <desc id="desc">Illustrated placeholder image showing Java running through a hallway.</desc>
+  <rect width="1200" height="800" fill="#e6edf8"/>
+  <polygon points="0,800 250,200 950,200 1200,800" fill="#cddbf2"/>
+  <ellipse cx="580" cy="470" rx="240" ry="90" fill="#2f2f2f"/>
+  <circle cx="770" cy="450" r="70" fill="#2f2f2f"/>
+  <text x="600" y="705" text-anchor="middle" font-size="48" fill="#3d405b" font-family="Georgia, serif">Java: 4 A.M. Zoomies</text>
+</svg>

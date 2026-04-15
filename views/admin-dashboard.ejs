@@ -1,0 +1,53 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell">
+  <section class="section-head reveal-up">
+    <p class="eyebrow">Admin</p>
+    <h1>Post Manager</h1>
+    <p>Create new posts and edit existing posts and image metadata.</p>
+  </section>
+
+  <section class="about-card reveal-up" style="--delay: 70ms">
+    <div class="admin-toolbar">
+      <a class="button-primary" href="/admin/new">New Post</a>
+      <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
+      <form method="post" action="/admin/logout">
+        <button class="button-ghost" type="submit">Logout</button>
+      </form>
+    </div>
+
+    <% if (saved) { %>
+      <p class="admin-success" role="status">Post saved successfully.</p>
+    <% } %>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table" aria-label="Post list">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Date</th>
+            <th>Mood</th>
+            <th>Slug</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% posts.forEach((post) => { %>
+            <tr>
+              <td><%= post.title %></td>
+              <td><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></td>
+              <td><%= post.mood %></td>
+              <td><code><%= post.slug %></code></td>
+              <td>
+                <a class="read-link" href="/admin/edit/<%= post.id %>">Edit</a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<%- include("partials/footer") %>
