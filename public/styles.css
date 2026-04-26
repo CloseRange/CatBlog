@@ -25,46 +25,6 @@ body {
   min-height: 100vh;
 }
 
-html.paw-cursor-enabled,
-body.paw-cursor-enabled,
-body.paw-cursor-enabled a,
-body.paw-cursor-enabled button,
-body.paw-cursor-enabled input,
-body.paw-cursor-enabled textarea,
-body.paw-cursor-enabled select,
-body.paw-cursor-enabled label {
-  cursor: none;
-}
-
-.paw-cursor {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 34px;
-  height: 34px;
-  pointer-events: none;
-  z-index: 9999;
-  --paw-x: -100px;
-  --paw-y: -100px;
-  --paw-scale: 1;
-  opacity: 0;
-  background-image: url("/images/cursor/cat_cursor.png");
-  background-repeat: no-repeat;
-  background-size: 200% 100%;
-  background-position: left center;
-  transform: translate3d(var(--paw-x), var(--paw-y), 0) scale(var(--paw-scale));
-  transition: opacity 120ms ease, background-position 100ms ease;
-}
-
-.paw-cursor.is-active {
-  --paw-scale: 1.14;
-  background-position: right center;
-}
-
-.paw-cursor.is-pressed {
-  --paw-scale: 0.92;
-}
-
 a {
   text-underline-offset: 0.2rem;
 }
@@ -611,10 +571,6 @@ button:disabled,
   * {
     animation: none !important;
     transition: none !important;
-  }
-
-  .paw-cursor {
-    display: none;
   }
 
   .reveal-up {
