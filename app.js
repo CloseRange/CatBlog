@@ -7,6 +7,7 @@ require("dotenv").config();
 
 const {
   createSupabaseClient,
+  getCatBucket,
   getSupabaseBucket,
   getSupabaseImageUrl,
   hasSupabaseConfig,
@@ -81,38 +82,48 @@ function createSlug(title) {
     .replace(/\s+/g, "-");
 }
 
-function normalizeImage(image, fallbackAlt) {
+function normalizeImage(image, fallbackAlt, fallbackBucket) {
   if (typeof image === "string") {
     return {
       src: image,
       alt: fallbackAlt,
       caption: "",
+      storageBucket: fallbackBucket || getSupabaseBucket(),
+      storagePath: "",
     };
   }
 
+  const storagePath = image.storagePath || image.storage_path || "";
+  const storageBucket =
+    image.storageBucket ||
+    image.storage_bucket ||
+    fallbackBucket ||
+    getSupabaseBucket();
+
   return {
-    src:
-      image.src ||
-      (image.storagePath || image.storage_path
-        ? getSupabaseImageUrl(image.storagePath || image.storage_path)
-        : ""),
+    src: image.src || (storagePath ? getSupabaseImageUrl(storagePath, storageBucket) : ""),
     alt: image.alt || fallbackAlt,
     caption: image.caption || "",
+    storageBucket,
+    storagePath,
   };
 }
 
 function normalizePostRow(post) {
-  const fallbackAlt = `Photo of Java for post: ${post.title}`;
+  const catName = (post.cat && post.cat.name) || "this cat";
+  const fallbackBucket =
+    (post.cat && post.cat.slug && getCatBucket(post.cat.slug)) || getSupabaseBucket();
+  const fallbackAlt = `Photo of ${catName} for post: ${post.title}`;
   const rawImages = Array.isArray(post.post_images) ? post.post_images : [];
   const images = rawImages
     .slice()
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-    .map((image) => normalizeImage(image, fallbackAlt))
+    .map((image) => normalizeImage(image, fallbackAlt, fallbackBucket))
     .filter((image) => Boolean(image.src));
   const coverImageRow =
     rawImages.find((image) => image.is_cover) || rawImages[0] || null;
   const coverImage = coverImageRow
-    ? normalizeImage(coverImageRow, fallbackAlt)
+    ? normalizeImage(coverImageRow, fallbackAlt, fallbackBucket)
     : images[0] || null;
 
   return {
@@ -124,14 +135,17 @@ function normalizePostRow(post) {
 
 function withComputedFields(post) {
   const words = post.body.trim().split(/\s+/).length;
-  const fallbackAlt = `Photo of Java for post: ${post.title}`;
+  const catName = (post.cat && post.cat.name) || "this cat";
+  const fallbackBucket =
+    (post.cat && post.cat.slug && getCatBucket(post.cat.slug)) || getSupabaseBucket();
+  const fallbackAlt = `Photo of ${catName} for post: ${post.title}`;
   const images = Array.isArray(post.images)
     ? post.images
-        .map((image) => normalizeImage(image, fallbackAlt))
+        .map((image) => normalizeImage(image, fallbackAlt, fallbackBucket))
         .filter((image) => Boolean(image.src))
     : [];
   const coverImage = post.coverImage
-    ? normalizeImage(post.coverImage, fallbackAlt)
+    ? normalizeImage(post.coverImage, fallbackAlt, fallbackBucket)
     : images[0] || null;
 
   return {
@@ -145,23 +159,44 @@ function withComputedFields(post) {
   };
 }
 
-async function loadPosts() {
+async function loadPosts(options = {}) {
+  const requestedCatSlug = String(options.catSlug || "").trim().toLowerCase();
+
   if (!hasSupabaseConfig() || !supabase) {
-    return [...posts]
+    const inMemoryPosts = [...posts]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .map(withComputedFields);
+
+    if (!requestedCatSlug) {
+      return inMemoryPosts;
+    }
+
+    return inMemoryPosts.filter((post) => {
+      const postCatSlug = String((post.cat && post.cat.slug) || "java").toLowerCase();
+      return postCatSlug === requestedCatSlug;
+    });
   }
 
   const { data, error } = await supabase
     .from("posts")
-    .select("id, title, slug, date, mood, body, post_images(id, storage_path, alt, caption, sort_order, is_cover)")
+    .select(
+      "id, title, slug, date, mood, body, cat:cats(id, name, slug), post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
+    )
     .order("date", { ascending: false });
 
   if (error) {
     throw error;
   }
 
-  return (data || []).map(normalizePostRow).map(withComputedFields);
+  const normalized = (data || []).map(normalizePostRow).map(withComputedFields);
+  if (!requestedCatSlug) {
+    return normalized;
+  }
+
+  return normalized.filter((post) => {
+    const postCatSlug = String((post.cat && post.cat.slug) || "").toLowerCase();
+    return postCatSlug === requestedCatSlug;
+  });
 }
 
 function buildGalleryItemsFromPosts(allPosts) {
@@ -466,8 +501,63 @@ function isImagePath(storagePath, mimetype) {
   return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(String(storagePath || ""));
 }
 
-async function listBucketImages() {
-  const bucket = getSupabaseBucket();
+const STORAGE_ALLOWED_MIME_TYPES = [
+  "image/svg+xml",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+];
+
+function getBucketForCat(cat) {
+  const slug = String((cat && cat.slug) || "").trim();
+  return getCatBucket(slug);
+}
+
+async function ensureCatBucketExists(cat) {
+  const bucket = getBucketForCat(cat);
+  const { data: existingBucket, error: getBucketError } = await supabase.storage
+    .getBucket(bucket);
+
+  if (getBucketError) {
+    const message = String(getBucketError.message || "");
+    const notFound = /not found|does not exist|no rows/i.test(message);
+
+    if (!notFound) {
+      throw new Error(getBucketError.message);
+    }
+
+    const { error: createError } = await supabase.storage.createBucket(bucket, {
+      public: true,
+      fileSizeLimit: 10485760,
+      allowedMimeTypes: STORAGE_ALLOWED_MIME_TYPES,
+    });
+
+    if (createError) {
+      throw new Error(createError.message);
+    }
+
+    return bucket;
+  }
+
+  if (existingBucket) {
+    const { error: updateError } = await supabase.storage.updateBucket(bucket, {
+      public: true,
+      fileSizeLimit: 10485760,
+      allowedMimeTypes: STORAGE_ALLOWED_MIME_TYPES,
+    });
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+  }
+
+  return bucket;
+}
+
+async function listBucketImages(bucket) {
+  const targetBucket = String(bucket || "").trim() || getSupabaseBucket();
   const foldersToVisit = [""];
   const files = [];
 
@@ -478,7 +568,7 @@ async function listBucketImages() {
 
     while (true) {
       const { data, error } = await supabase.storage
-        .from(bucket)
+        .from(targetBucket)
         .list(folder, {
           limit,
           offset,
@@ -511,7 +601,7 @@ async function listBucketImages() {
             updatedAt: entry.updated_at,
             size: entry.metadata && entry.metadata.size,
             mimeType: entry.metadata && entry.metadata.mimetype,
-            publicUrl: getSupabaseImageUrl(fullPath),
+            publicUrl: getSupabaseImageUrl(fullPath, targetBucket),
           });
         }
       });
@@ -567,6 +657,7 @@ function serializeImagesInput(images) {
     .slice()
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     .map((image, index) => ({
+      storage_bucket: image.storage_bucket || image.storageBucket || "",
       storage_path: image.storage_path,
       alt: image.alt || "",
       caption: image.caption || "",
@@ -660,7 +751,7 @@ async function fetchAdminPostById(postId) {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, title, slug, date, mood, body, cat_id, post_images(id, storage_path, alt, caption, sort_order, is_cover)"
+      "id, title, slug, date, mood, body, cat_id, post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
     )
     .eq("id", postId)
     .single();
@@ -670,6 +761,24 @@ async function fetchAdminPostById(postId) {
   }
 
   return data;
+}
+
+async function fetchPostCatByPostId(postId) {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, cat:cats(id, name, slug)")
+    .eq("id", postId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data || !data.cat) {
+    return null;
+  }
+
+  return data.cat;
 }
 
 async function saveAdminPost(formData) {
@@ -684,6 +793,13 @@ async function saveAdminPost(formData) {
   if (!title || !mood || !body || !date || !catId) {
     throw new Error("Title, mood, date, and body are required.");
   }
+
+  const selectedCat = await fetchAdminCatById(catId);
+  if (!selectedCat) {
+    throw new Error("Selected cat was not found.");
+  }
+
+  const bucket = await ensureCatBucketExists(selectedCat);
 
   const images = formData.selectedPath
     ? parseSingleGallerySelection(formData.selectedPath)
@@ -729,6 +845,7 @@ async function saveAdminPost(formData) {
   if (images.length) {
     const rows = images.map((image) => ({
       post_id: savedPostId,
+      storage_bucket: bucket,
       storage_path: image.storage_path,
       alt: image.alt,
       caption: image.caption,
@@ -822,7 +939,7 @@ app.get("/gallery", async (req, res, next) => {
 
 app.get("/java", async (req, res, next) => {
   try {
-    const allPosts = await loadPosts();
+    const allPosts = await loadPosts({ catSlug: "java" });
     const [featuredPost, ...latestPosts] = allPosts;
 
     return res.render("index", {
@@ -858,7 +975,7 @@ app.get("/java/about", (req, res) => {
 
 app.get("/java/gallery", async (req, res, next) => {
   try {
-    const allPosts = await loadPosts();
+    const allPosts = await loadPosts({ catSlug: "java" });
 
     return res.render("gallery", {
       pageTitle: "Java's Photo Gallery",
@@ -1003,7 +1120,8 @@ app.post(
 
     const aiPrompt = String(req.body.aiPrompt || "").trim();
     const selectedPath = String(req.body.selectedPath || "");
-    const galleryImages = await listBucketImages().catch(() => []);
+    const selectedBucket = await ensureCatBucketExists(selectedCat);
+    const galleryImages = await listBucketImages(selectedBucket).catch(() => []);
     const selectedImagesByPath = parseSingleGallerySelection(selectedPath).reduce(
       (acc, image) => {
         acc[image.storage_path] = {
@@ -1025,6 +1143,7 @@ app.post(
         error: "OpenAI is not configured. Add OPENAI_API_KEY in .env.",
         mode,
         selectedCat,
+        selectedBucket,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1056,6 +1175,7 @@ app.post(
         error: "Add a prompt for AI generation.",
         mode,
         selectedCat,
+        selectedBucket,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1089,6 +1209,7 @@ app.post(
         error: "",
         mode,
         selectedCat,
+        selectedBucket,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1120,6 +1241,7 @@ app.post(
         error: `AI generation failed: ${error.message}`,
         mode,
         selectedCat,
+        selectedBucket,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1169,8 +1291,16 @@ app.post(
       const baseName = sanitizeFileName(path.basename(req.file.originalname || "image", ext));
       const timestamp = Date.now();
       const safeExt = ext.toLowerCase().replace(/[^a-z0-9.]/g, "") || ".bin";
-      const storagePath = `java/${timestamp}-${baseName || "image"}${safeExt}`;
-      const bucket = getSupabaseBucket();
+      const postCat = await fetchPostCatByPostId(postId);
+      if (!postCat) {
+        return res.redirect(`/admin/edit/${postId}?uploadError=Post+cat+not+found`);
+      }
+
+      const folder = normalizeFolderPath(postCat.slug || "images");
+      const storagePath = folder
+        ? `${folder}/${timestamp}-${baseName || "image"}${safeExt}`
+        : `${timestamp}-${baseName || "image"}${safeExt}`;
+      const bucket = await ensureCatBucketExists(postCat);
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
@@ -1189,6 +1319,7 @@ app.post(
 
       const { error: imageInsertError } = await supabase.from("post_images").insert({
         post_id: postId,
+        storage_bucket: bucket,
         storage_path: storagePath,
         alt: String(req.body.alt || "").trim() || null,
         caption: String(req.body.caption || "").trim() || "",
@@ -1228,12 +1359,28 @@ app.get(
   requireAdmin,
   async (req, res, next) => {
     try {
-      const images = await listBucketImages();
+      const cats = await fetchAdminCats();
+      const requestedCatId = String(req.query.catId || "").trim();
+      const selectedCat = requestedCatId
+        ? await fetchAdminCatById(requestedCatId)
+        : null;
+
+      if (requestedCatId && !selectedCat) {
+        return res.redirect("/admin/gallery");
+      }
+
+      const selectedBucket = selectedCat
+        ? await ensureCatBucketExists(selectedCat)
+        : "";
+      const images = selectedBucket ? await listBucketImages(selectedBucket) : [];
 
       res.render("admin-gallery", {
         pageTitle: "Admin Gallery",
         metaDescription: "Manage images in Supabase storage.",
         currentPath: "/admin",
+        cats,
+        selectedCat,
+        selectedBucket,
         images,
         uploaded: req.query.uploaded === "1",
         deleted: req.query.deleted === "1",
@@ -1253,15 +1400,22 @@ app.post(
   upload.single("imageFile"),
   async (req, res) => {
     try {
+      const catId = String(req.body.catId || "").trim();
+      const selectedCat = await fetchAdminCatById(catId);
+      if (!selectedCat) {
+        return res.redirect("/admin/gallery?error=Select+a+cat+first");
+      }
+
       if (!req.file) {
-        return res.redirect("/admin/gallery?error=Please+choose+an+image+file");
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=Please+choose+an+image+file`);
       }
 
       if (!String(req.file.mimetype || "").startsWith("image/")) {
-        return res.redirect("/admin/gallery?error=Only+image+files+are+allowed");
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=Only+image+files+are+allowed`);
       }
 
-      const folder = normalizeFolderPath(req.body.folder || "java");
+      const bucket = await ensureCatBucketExists(selectedCat);
+      const folder = normalizeFolderPath(req.body.folder || selectedCat.slug || "images");
       const ext = path.extname(req.file.originalname || "") || "";
       const baseName = sanitizeFileName(
         path.basename(req.file.originalname || "image", ext)
@@ -1270,7 +1424,6 @@ app.post(
       const safeExt = ext.toLowerCase().replace(/[^a-z0-9.]/g, "") || ".bin";
       const fileName = `${timestamp}-${baseName || "image"}${safeExt}`;
       const storagePath = folder ? `${folder}/${fileName}` : fileName;
-      const bucket = getSupabaseBucket();
 
       const { error } = await supabase.storage
         .from(bucket)
@@ -1283,9 +1436,11 @@ app.post(
         throw new Error(error.message);
       }
 
-      return res.redirect("/admin/gallery?uploaded=1");
+      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&uploaded=1`);
     } catch (error) {
-      return res.redirect(`/admin/gallery?error=${encodeURIComponent(error.message)}`);
+      const catId = String(req.body.catId || "").trim();
+      const catQuery = catId ? `catId=${encodeURIComponent(catId)}&` : "";
+      return res.redirect(`/admin/gallery?${catQuery}error=${encodeURIComponent(error.message)}`);
     }
   }
 );
@@ -1296,12 +1451,18 @@ app.post(
   requireAdmin,
   async (req, res) => {
     try {
-      const storagePath = normalizeFolderPath(req.body.storagePath || "");
-      if (!storagePath) {
-        return res.redirect("/admin/gallery?error=Image+path+is+required");
+      const catId = String(req.body.catId || "").trim();
+      const selectedCat = await fetchAdminCatById(catId);
+      if (!selectedCat) {
+        return res.redirect("/admin/gallery?error=Select+a+cat+first");
       }
 
-      const bucket = getSupabaseBucket();
+      const storagePath = normalizeFolderPath(req.body.storagePath || "");
+      if (!storagePath) {
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=Image+path+is+required`);
+      }
+
+      const bucket = await ensureCatBucketExists(selectedCat);
       const { error: storageError } = await supabase.storage
         .from(bucket)
         .remove([storagePath]);
@@ -1313,15 +1474,18 @@ app.post(
       const { error: relationError } = await supabase
         .from("post_images")
         .delete()
+        .eq("storage_bucket", bucket)
         .eq("storage_path", storagePath);
 
       if (relationError) {
         throw new Error(relationError.message);
       }
 
-      return res.redirect("/admin/gallery?deleted=1");
+      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&deleted=1`);
     } catch (error) {
-      return res.redirect(`/admin/gallery?error=${encodeURIComponent(error.message)}`);
+      const catId = String(req.body.catId || "").trim();
+      const catQuery = catId ? `catId=${encodeURIComponent(catId)}&` : "";
+      return res.redirect(`/admin/gallery?${catQuery}error=${encodeURIComponent(error.message)}`);
     }
   }
 );
@@ -1332,11 +1496,17 @@ app.post(
   requireAdmin,
   async (req, res) => {
     try {
+      const catId = String(req.body.catId || "").trim();
+      const selectedCat = await fetchAdminCatById(catId);
+      if (!selectedCat) {
+        return res.redirect("/admin/gallery?error=Select+a+cat+first");
+      }
+
       const oldPath = normalizeFolderPath(req.body.oldPath || "");
       let newPath = normalizeFolderPath(req.body.newPath || "");
 
       if (!oldPath || !newPath) {
-        return res.redirect("/admin/gallery?error=Both+old+and+new+paths+are+required");
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=Both+old+and+new+paths+are+required`);
       }
 
       const oldExt = path.extname(oldPath || "");
@@ -1346,10 +1516,10 @@ app.post(
       }
 
       if (oldPath === newPath) {
-        return res.redirect("/admin/gallery?error=New+path+must+be+different");
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=New+path+must+be+different`);
       }
 
-      const bucket = getSupabaseBucket();
+      const bucket = await ensureCatBucketExists(selectedCat);
       const { error: moveError } = await supabase.storage
         .from(bucket)
         .move(oldPath, newPath);
@@ -1361,15 +1531,18 @@ app.post(
       const { error: updateError } = await supabase
         .from("post_images")
         .update({ storage_path: newPath })
+        .eq("storage_bucket", bucket)
         .eq("storage_path", oldPath);
 
       if (updateError) {
         throw new Error(updateError.message);
       }
 
-      return res.redirect("/admin/gallery?renamed=1");
+      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&renamed=1`);
     } catch (error) {
-      return res.redirect(`/admin/gallery?error=${encodeURIComponent(error.message)}`);
+      const catId = String(req.body.catId || "").trim();
+      const catQuery = catId ? `catId=${encodeURIComponent(catId)}&` : "";
+      return res.redirect(`/admin/gallery?${catQuery}error=${encodeURIComponent(error.message)}`);
     }
   }
 );
@@ -1414,7 +1587,8 @@ app.get(
         return res.redirect("/admin");
       }
 
-      const galleryImages = await listBucketImages();
+      const selectedBucket = await ensureCatBucketExists(selectedCat);
+      const galleryImages = await listBucketImages(selectedBucket);
 
       res.render("admin-form", {
         pageTitle: "New Post",
@@ -1423,6 +1597,7 @@ app.get(
         error: "",
         mode: "create",
         selectedCat,
+        selectedBucket,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath: {},
@@ -1462,7 +1637,8 @@ app.get(
         return res.redirect("/admin");
       }
 
-      const galleryImages = await listBucketImages();
+      const selectedBucket = await ensureCatBucketExists(selectedCat);
+      const galleryImages = await listBucketImages(selectedBucket);
       const selectedImagesByPath = (post.post_images || []).reduce((acc, image) => {
         acc[image.storage_path] = {
           alt: image.alt || "",
@@ -1484,6 +1660,7 @@ app.get(
         error: "",
         mode: "edit",
         selectedCat,
+        selectedBucket,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1525,7 +1702,10 @@ app.post(
       );
     } catch (error) {
       const selectedCat = await fetchAdminCatById(catId);
-      const galleryImages = await listBucketImages().catch(() => []);
+      const selectedBucket = selectedCat
+        ? await ensureCatBucketExists(selectedCat).catch(() => "")
+        : "";
+      const galleryImages = await listBucketImages(selectedBucket).catch(() => []);
       const selectedImagesByPath = parseSingleGallerySelection(
         req.body.selectedPath
       ).reduce((acc, image) => {
@@ -1545,6 +1725,7 @@ app.post(
         error: error.message,
         mode: req.body.postId ? "edit" : "create",
         selectedCat,
+        selectedBucket,
         catId,
         galleryImages,
         selectedImagesByPath,

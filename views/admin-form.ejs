@@ -11,7 +11,7 @@
   <section class="about-card reveal-up" style="--delay: 70ms">
     <div class="admin-toolbar">
       <a class="button-ghost" href="/admin?catId=<%= catId || (selectedCat && selectedCat.id) || "" %>">Back To <%= selectedCat ? selectedCat.name : "Admin" %></a>
-      <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
+      <a class="button-ghost" href="/admin/gallery?catId=<%= catId || (selectedCat && selectedCat.id) || "" %>">Manage Gallery</a>
       <a class="button-ghost" href="/">View Site</a>
     </div>
 
@@ -76,7 +76,7 @@
       </label>
 
       <% if (!galleryImages.length) { %>
-        <p class="admin-error">No gallery images found. Upload in <a href="/admin/gallery">Manage Gallery</a>.</p>
+        <p class="admin-error">No gallery images found. Upload in <a href="/admin/gallery?catId=<%= catId || (selectedCat && selectedCat.id) || "" %>">Manage Gallery</a>.</p>
       <% } %>
 
       <section class="admin-gallery-grid" aria-label="Gallery image picker">

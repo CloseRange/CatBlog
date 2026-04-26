@@ -17,7 +17,7 @@
       <div class="admin-toolbar">
         <a class="button-ghost" href="/admin">All Cats</a>
         <a class="button-primary" href="/admin/new?catId=<%= selectedCat.id %>">New Post</a>
-        <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
+        <a class="button-ghost" href="/admin/gallery?catId=<%= selectedCat.id %>">Manage Gallery</a>
         <form method="post" action="/admin/logout">
           <button class="button-ghost" type="submit">Logout</button>
         </form>

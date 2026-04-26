@@ -154,9 +154,10 @@ where post_id in (
   select id from upserted_posts
 );
 
-insert into post_images (post_id, storage_path, alt, caption, sort_order, is_cover)
+insert into post_images (post_id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)
 select
   p.id,
+  'catblog-' || trim(both '-' from regexp_replace(lower(c.slug), '[^a-z0-9-]+', '-', 'g')),
   i.storage_path,
   i.alt,
   i.caption,
@@ -238,7 +239,9 @@ from (
     )
 ) as i (slug, storage_path, alt, caption, sort_order, is_cover)
 join posts p on p.slug = i.slug
+join cats c on c.id = p.cat_id
 on conflict (post_id, storage_path) do update set
+  storage_bucket = excluded.storage_bucket,
   alt = excluded.alt,
   caption = excluded.caption,
   sort_order = excluded.sort_order,
