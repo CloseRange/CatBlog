@@ -7,18 +7,17 @@
   <section class="hero reveal-up">
     <div class="hero-layout <%= siteCat && siteCat.profileImage && siteCat.profileImage.src ? 'hero-layout-has-image' : '' %>">
       <div>
-        <p class="eyebrow">Memorial Archive</p>
+        <p class="eyebrow"><%= siteCat && siteCat.tag ? siteCat.tag : "Memorial Archive" %></p>
         <h1><%= siteCat ? `${siteCat.name} - ${siteCat.title}` : 'Java - The adventures of the most overqualified house cat' %></h1>
         <p>
-          <%= siteCat && siteCat.description
-            ? siteCat.description
+          <%= siteCat && siteCat.backstory
+            ? siteCat.backstory
             : 'Java was the main influance for this project. Sadly, in the middle of development, we were forced to euthanize her. Let this archive serve as a memory of her and the love she gave us.' %>
         </p>
         <div class="hero-actions">
           <% if (featuredPost) { %>
             <a class="button-primary" href="<%= postBase %>/<%= featuredPost.slug %>">Read Featured Entry</a>
           <% } %>
-          <a class="button-ghost" href="<%= basePath ? `${basePath}/about` : '/about' %>">About this project</a>
         </div>
       </div>
 

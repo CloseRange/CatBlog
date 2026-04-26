@@ -346,7 +346,7 @@ button:disabled,
 }
 
 .cat-directory-grid .blog-card {
-  height: 380px;
+  height: 420px;
   display: grid;
   grid-template-rows: auto auto auto 1fr;
   gap: 0.2rem;
@@ -400,8 +400,8 @@ button:disabled,
   overflow: hidden;
   overflow-wrap: anywhere;
   display: -webkit-box;
-  line-clamp: 4;
-  -webkit-line-clamp: 4;
+  line-clamp: 6;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
 }
 
