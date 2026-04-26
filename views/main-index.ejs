@@ -23,16 +23,28 @@
 
     <section class="posts-grid" aria-label="Available cat blogs">
       <% availableBlogs.forEach((blog, index) => { %>
-        <article class="post-card reveal-up" style="--delay: <%= 130 + (index * 60) %>ms">
-          <p class="post-chip"><%= blog.name %></p>
-          <h2><%= blog.title %></h2>
-          <p><%= blog.description %></p>
-          <% if (blog.isLive) { %>
-            <a class="main-btn" href="<%= blog.href %>">Visit Blog</a>
-          <% } else { %>
-            <span class="main-btn main-btn-ghost" aria-disabled="true">Coming Soon</span>
-          <% } %>
-        </article>
+        <% if (blog.isLive) { %>
+          <a
+            class="blog-card-link reveal-up"
+            href="<%= blog.href %>"
+            style="--delay: <%= 130 + (index * 60) %>ms"
+            aria-label="Enter <%= blog.title %>"
+          >
+            <article class="post-card blog-card">
+              <p class="post-chip"><%= blog.name %></p>
+              <h2><%= blog.title %></h2>
+              <p><%= blog.description %></p>
+              <span class="blog-card-cta">Enter blog</span>
+            </article>
+          </a>
+        <% } else { %>
+          <article class="post-card blog-card blog-card-is-disabled reveal-up" style="--delay: <%= 130 + (index * 60) %>ms" aria-disabled="true">
+            <p class="post-chip"><%= blog.name %></p>
+            <h2><%= blog.title %></h2>
+            <p><%= blog.description %></p>
+            <span class="main-btn main-btn-ghost blog-card-cta" aria-disabled="true">Coming Soon</span>
+          </article>
+        <% } %>
       <% }) %>
     </section>
   <% } else { %>
