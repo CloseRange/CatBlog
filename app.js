@@ -52,6 +52,7 @@ app.use((req, res, next) => {
   res.locals.siteName = "CatBlog";
   res.locals.siteBrand = "CatBlog";
   res.locals.siteBasePath = "";
+  res.locals.blogNavLabel = "";
   res.locals.isJavaSite = false;
   res.locals.stylesheetPath = "/styles.css";
   next();
@@ -64,6 +65,7 @@ app.use((req, res, next) => {
     res.locals.siteName = "Java's Logbook";
     res.locals.siteBrand = "Java's Logbook";
     res.locals.siteBasePath = "/java";
+    res.locals.blogNavLabel = "Java's Blog";
     res.locals.isJavaSite = true;
     res.locals.stylesheetPath = "/styles.css";
   }

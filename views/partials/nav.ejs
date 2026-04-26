@@ -1,17 +1,23 @@
 <header class="site-nav-wrap">
   <% const activePath = typeof currentPath !== 'undefined' ? currentPath : ''; %>
   <% const basePath = typeof siteBasePath !== 'undefined' ? siteBasePath : ''; %>
-  <% const homeHref = basePath ? basePath : '/'; %>
+  <% const rootHref = '/'; %>
+  <% const homeHref = basePath ? basePath : rootHref; %>
   <% const galleryHref = basePath ? `${basePath}/gallery` : '/gallery'; %>
   <% const aboutHref = basePath ? `${basePath}/about` : '/about'; %>
-  <% const brandLabel = typeof siteBrand !== 'undefined' ? siteBrand : 'CatBlog'; %>
+  <% const brandLabel = 'CatBlog'; %>
+  <% const blogHomeLabel = basePath
+    ? (typeof blogNavLabel !== 'undefined' && blogNavLabel
+      ? blogNavLabel
+      : (typeof siteBrand !== 'undefined' ? siteBrand : 'Blog Home'))
+    : 'Home'; %>
   <nav class="site-nav" aria-label="Primary">
-    <a class="brand" href="<%= homeHref %>">
+    <a class="brand" href="<%= rootHref %>">
       <span class="brand-icon">=^.^=</span>
       <span><%= brandLabel %></span>
     </a>
     <div class="nav-links">
-      <a href="<%= homeHref %>" class="<%= activePath === '/' ? 'is-active' : '' %>" aria-current="<%= activePath === '/' ? 'page' : 'false' %>">Home</a>
+      <a href="<%= homeHref %>" class="<%= activePath === '/' ? 'is-active' : '' %>" aria-current="<%= activePath === '/' ? 'page' : 'false' %>"><%= blogHomeLabel %></a>
       <a href="<%= galleryHref %>" class="<%= activePath === '/gallery' ? 'is-active' : '' %>" aria-current="<%= activePath === '/gallery' ? 'page' : 'false' %>">Gallery</a>
       <a href="<%= aboutHref %>" class="<%= activePath === '/about' ? 'is-active' : '' %>" aria-current="<%= activePath === '/about' ? 'page' : 'false' %>">About</a>
     </div>
