@@ -3,7 +3,6 @@ const session = require("express-session");
 const multer = require("multer");
 const path = require("path");
 const posts = require("./data/posts");
-const { loadJavaSiteData } = require("./data/javaSite");
 require("dotenv").config();
 
 const {
@@ -25,7 +24,6 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const OPENAI_PROJECT_ID = String(process.env.OPENAI_PROJECT_ID || "").trim();
 const OPENAI_ORG_ID = String(process.env.OPENAI_ORG_ID || "").trim();
 const AI_ENABLED = Boolean(OPENAI_API_KEY);
-let javaSiteCache = null;
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -55,7 +53,7 @@ app.use((req, res, next) => {
   res.locals.siteBrand = "CatBlog";
   res.locals.siteBasePath = "";
   res.locals.isJavaSite = false;
-  res.locals.stylesheetPath = "/styles-main.css";
+  res.locals.stylesheetPath = "/styles.css";
   next();
 });
 
@@ -72,14 +70,6 @@ app.use((req, res, next) => {
 
   next();
 });
-
-function getJavaSiteData() {
-  if (!javaSiteCache) {
-    javaSiteCache = loadJavaSiteData();
-  }
-
-  return javaSiteCache;
-}
 
 function createSlug(title) {
   return title
@@ -170,6 +160,18 @@ async function loadPosts() {
   }
 
   return (data || []).map(normalizePostRow).map(withComputedFields);
+}
+
+function buildGalleryItemsFromPosts(allPosts) {
+  return allPosts.flatMap((post) =>
+    (post.images || []).map((image, index) => ({
+      ...image,
+      postTitle: post.title,
+      postSlug: post.slug,
+      date: post.date,
+      index,
+    }))
+  );
 }
 
 async function generatePostDraftFromPrompt(prompt) {
@@ -678,77 +680,99 @@ async function saveAdminPost(formData) {
   return savedPostId;
 }
 
-app.get("/", async (req, res, next) => {
-  try {
-    const allPosts = await loadPosts();
-    const [featuredPost, ...latestPosts] = allPosts;
+app.get("/", (req, res) => {
+  const availableBlogs = [
+    {
+      key: "java",
+      name: "Java",
+      title: "Java's Logbook",
+      description:
+        "A memorial archive of Java's stories and photos, powered by Supabase content.",
+      href: "/java",
+      isLive: true,
+    },
+    {
+      key: "coming-soon",
+      name: "Next Cat",
+      title: "Future Cat Blog",
+      description:
+        "Reserved for the next cat's adventures. Keep this card as your template for adding more cats.",
+      href: "",
+      isLive: false,
+    },
+  ];
 
-    res.render("main-index", {
-      pageTitle: "Home",
-      metaDescription:
-        "The main CatBlog site for future stories, with Java's memorial preserved at /java.",
-      currentPath: "/",
-      featuredPost: featuredPost || null,
-      posts: latestPosts.slice(0, 6),
-      siteName: "CatBlog",
-      siteBrand: "CatBlog",
-      siteBasePath: "",
-      isJavaSite: false,
-      stylesheetPath: "/styles-main.css",
-    });
-  } catch (error) {
-    next(error);
-  }
+  return res.render("main-index", {
+    pageTitle: "Choose A Blog",
+    metaDescription:
+      "Choose which cat blog to visit. Java's memorial blog is available now, and more cats can be added later.",
+    currentPath: "/",
+    availableBlogs,
+    siteName: "CatBlog Directory",
+    siteBrand: "CatBlog Directory",
+    siteBasePath: "",
+    isJavaSite: false,
+    stylesheetPath: "/styles.css",
+  });
 });
 
 app.get("/about", (req, res) => {
   res.render("main-about", {
     pageTitle: "About",
     metaDescription:
-      "About the main CatBlog site and Java's memorial archive.",
+      "About the CatBlog directory and how each cat blog is organized.",
     currentPath: "/about",
-    siteName: "CatBlog",
-    siteBrand: "CatBlog",
+    siteName: "CatBlog Directory",
+    siteBrand: "CatBlog Directory",
     siteBasePath: "",
     isJavaSite: false,
-    stylesheetPath: "/styles-main.css",
+    stylesheetPath: "/styles.css",
   });
 });
 
 app.get("/gallery", async (req, res, next) => {
   try {
-    res.render("main-gallery", {
+    const allPosts = await loadPosts();
+    const galleryItems = buildGalleryItemsFromPosts(allPosts);
+
+    return res.render("main-gallery", {
       pageTitle: "Gallery",
-      metaDescription: "Main-site gallery placeholder for future posts.",
+      metaDescription:
+        "All currently published photos across CatBlog blogs.",
       currentPath: "/gallery",
-      siteName: "CatBlog",
-      siteBrand: "CatBlog",
+      galleryItems,
+      siteName: "CatBlog Directory",
+      siteBrand: "CatBlog Directory",
       siteBasePath: "",
       isJavaSite: false,
-      stylesheetPath: "/styles-main.css",
+      stylesheetPath: "/styles.css",
     });
   } catch (error) {
     next(error);
   }
 });
 
-app.get("/java", (req, res) => {
-  const javaData = getJavaSiteData();
-  const [featuredPost, ...latestPosts] = javaData.posts;
+app.get("/java", async (req, res, next) => {
+  try {
+    const allPosts = await loadPosts();
+    const [featuredPost, ...latestPosts] = allPosts;
 
-  res.render("index", {
-    pageTitle: "Java's Logbook",
-    metaDescription:
-      "A memorial archive of Java's stories and photos, preserved with love.",
-    currentPath: "/",
-    featuredPost,
-    posts: latestPosts,
-    siteName: "Java's Logbook",
-    siteBrand: "Java's Logbook",
-    siteBasePath: "/java",
-    isJavaSite: true,
-    stylesheetPath: "/styles.css",
-  });
+    return res.render("index", {
+      pageTitle: "Java's Logbook",
+      metaDescription:
+        "A memorial archive of Java's stories and photos, preserved with love.",
+      currentPath: "/",
+      featuredPost,
+      posts: latestPosts,
+      siteName: "Java's Logbook",
+      siteBrand: "Java's Logbook",
+      siteBasePath: "/java",
+      isJavaSite: true,
+      stylesheetPath: "/styles.css",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/java/about", (req, res) => {
@@ -764,20 +788,24 @@ app.get("/java/about", (req, res) => {
   });
 });
 
-app.get("/java/gallery", (req, res) => {
-  const javaData = getJavaSiteData();
+app.get("/java/gallery", async (req, res, next) => {
+  try {
+    const allPosts = await loadPosts();
 
-  res.render("gallery", {
-    pageTitle: "Java's Photo Gallery",
-    metaDescription: "A memorial gallery of Java's photos.",
-    currentPath: "/gallery",
-    galleryItems: javaData.galleryItems,
-    siteName: "Java's Logbook",
-    siteBrand: "Java's Logbook",
-    siteBasePath: "/java",
-    isJavaSite: true,
-    stylesheetPath: "/styles.css",
-  });
+    return res.render("gallery", {
+      pageTitle: "Java's Photo Gallery",
+      metaDescription: "A memorial gallery of Java's photos.",
+      currentPath: "/gallery",
+      galleryItems: buildGalleryItemsFromPosts(allPosts),
+      siteName: "Java's Logbook",
+      siteBrand: "Java's Logbook",
+      siteBasePath: "/java",
+      isJavaSite: true,
+      stylesheetPath: "/styles.css",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/post/:slug", async (req, res, next) => {
@@ -798,16 +826,16 @@ app.get("/post/:slug", async (req, res, next) => {
       siteBrand: "CatBlog",
       siteBasePath: "",
       isJavaSite: false,
-      stylesheetPath: "/styles-main.css",
+      stylesheetPath: "/styles.css",
     });
   } catch (error) {
     next(error);
   }
 });
 
-app.get("/java/post/:slug", (req, res, next) => {
+app.get("/java/post/:slug", async (req, res, next) => {
   try {
-    const postsToSearch = getJavaSiteData().posts;
+    const postsToSearch = await loadPosts();
     const post = postsToSearch.find((entry) => entry.slug === req.params.slug);
 
     if (!post) {
