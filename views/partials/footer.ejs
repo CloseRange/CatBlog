@@ -1,26 +1,15 @@
     <footer class="site-footer">
-      <% const basePath = typeof siteBasePath !== 'undefined' ? siteBasePath : ''; %>
-      <% const homeHref = basePath ? basePath : '/'; %>
-      <% const galleryHref = basePath ? `${basePath}/gallery` : '/gallery'; %>
-      <% const aboutHref = basePath ? `${basePath}/about` : '/about'; %>
-      <% const onJavaSite = typeof isJavaSite !== 'undefined' ? isJavaSite : false; %>
       <p>
-        <% if (onJavaSite) { %>
-          Java's stories and photos are preserved here as a memorial archive.
-        <% } else { %>
-          CatBlog directory for selecting each cat's blog.
-        <% } %>
+        CatBlog directory for exploring each cat's blog and preserving Java's memorial archive.
       </p>
       <div class="footer-links">
-        <a href="<%= homeHref %>">Home</a>
-        <a href="<%= galleryHref %>">Gallery</a>
-        <a href="<%= aboutHref %>">About</a>
-        <% if (!onJavaSite) { %>
-          <a href="/java">Java Memorial</a>
-          <a href="/admin">Admin</a>
-        <% } %>
+        <a href="/">Home</a>
+        <a href="/java">Java's Blog</a>
+        <a href="/gallery">Gallery</a>
+        <a href="/about">About</a>
+        <a href="/admin">Admin</a>
       </div>
-      <p class="footer-note">&copy; <%= new Date().getFullYear() %> <%= typeof siteName !== 'undefined' ? siteName : 'CatBlog' %></p>
+      <p class="footer-note">&copy; <%= new Date().getFullYear() %> CatBlog</p>
     </footer>
     <script src="/script.js"></script>
   </body>
