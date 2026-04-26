@@ -4,21 +4,26 @@
 <main id="main-content" class="main-shell">
   <section class="about-card reveal-up">
     <p class="eyebrow">About This Memorial</p>
-    <h1>Who Is Java?</h1>
+    <h1>Who Is <%= siteCat ? siteCat.name : 'Java' %>?</h1>
+    <% if (siteCat && siteCat.profileImage && siteCat.profileImage.src) { %>
+      <img class="about-profile-image" src="<%= siteCat.profileImage.src %>" alt="<%= siteCat.profileImage.alt %>" loading="lazy" />
+    <% } %>
     <p>
-      Java was my real cat, with strong opinions about snacks, naps, and
-      chewing absolutely everything in sight.
+      <%= siteCat && siteCat.title
+        ? `${siteCat.name} was ${siteCat.title.toLowerCase()}, with strong opinions about snacks, naps, and chewing absolutely everything in sight.`
+        : 'Java was my real cat, with strong opinions about snacks, naps, and chewing absolutely everything in sight.' %>
     </p>
     <p>
       He had pica, so many entries are about the eternal struggle to keep socks,
       cardboard, and charging cables out of reach.
     </p>
     <p>
-      This memorial site preserves her memory through posts and images managed
-      in Supabase, so updates are easy while keeping the archive focused.
+      <%= siteCat && siteCat.description
+        ? `${siteCat.description} Posts and images are managed in Supabase, so updates are easy while keeping the archive focused.`
+        : 'This memorial site preserves her memory through posts and images managed in Supabase, so updates are easy while keeping the archive focused.' %>
     </p>
     <p>
-      Every page under <code>/java</code> is dedicated to Java's archive.
+      Every page under <code>/java</code> is dedicated to <%= siteCat ? siteCat.name : 'Java' %>'s archive.
     </p>
 
     <div class="about-highlights">

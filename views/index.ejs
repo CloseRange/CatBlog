@@ -5,16 +5,31 @@
 
 <main id="main-content" class="main-shell">
   <section class="hero reveal-up">
-    <p class="eyebrow">Memorial Archive</p>
-    <h1>Java - The adventures of the most overqualified house cat</h1>
-    <p>
-      Java was the main influance for this project. Sadly, in the middle of development, we were forced to euthanize her. Let this archive serve as a memory of her and the love she gave us.
-    </p>
-    <div class="hero-actions">
-      <% if (featuredPost) { %>
-        <a class="button-primary" href="<%= postBase %>/<%= featuredPost.slug %>">Read Featured Entry</a>
+    <div class="hero-layout <%= siteCat && siteCat.profileImage && siteCat.profileImage.src ? 'hero-layout-has-image' : '' %>">
+      <div>
+        <p class="eyebrow">Memorial Archive</p>
+        <h1><%= siteCat ? `${siteCat.name} - ${siteCat.title}` : 'Java - The adventures of the most overqualified house cat' %></h1>
+        <p>
+          <%= siteCat && siteCat.description
+            ? siteCat.description
+            : 'Java was the main influance for this project. Sadly, in the middle of development, we were forced to euthanize her. Let this archive serve as a memory of her and the love she gave us.' %>
+        </p>
+        <div class="hero-actions">
+          <% if (featuredPost) { %>
+            <a class="button-primary" href="<%= postBase %>/<%= featuredPost.slug %>">Read Featured Entry</a>
+          <% } %>
+          <a class="button-ghost" href="<%= basePath ? `${basePath}/about` : '/about' %>">About this project</a>
+        </div>
+      </div>
+
+      <% if (siteCat && siteCat.profileImage && siteCat.profileImage.src) { %>
+        <img
+          class="hero-profile-image"
+          src="<%= siteCat.profileImage.src %>"
+          alt="<%= siteCat.profileImage.alt %>"
+          loading="lazy"
+        />
       <% } %>
-      <a class="button-ghost" href="<%= basePath ? `${basePath}/about` : '/about' %>">About this project</a>
     </div>
   </section>
 
@@ -57,7 +72,7 @@
 
   <section class="section-head reveal-up" style="--delay: 140ms">
     <p class="eyebrow">Archive Entries</p>
-    <h2>Stories From Java's Logbook</h2>
+    <h2>Stories From <%= siteCat ? `${siteCat.name}'s Logbook` : "Java's Logbook" %></h2>
   </section>
 
   <section class="posts-grid" aria-label="Recent blog posts">
@@ -85,7 +100,7 @@
 
   <section class="gallery-cta reveal-up" style="--delay: 220ms">
     <p class="eyebrow">Photo Roll</p>
-    <h2>Want More Java Photos?</h2>
+    <h2>Want More <%= siteCat ? siteCat.name : 'Java' %> Photos?</h2>
     <p>Browse all images in one place, grouped automatically from post media.</p>
     <a class="button-primary" href="<%= basePath ? `${basePath}/gallery` : '/gallery' %>">Open Gallery</a>
   </section>

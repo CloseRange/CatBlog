@@ -31,6 +31,9 @@
             aria-label="Enter <%= blog.title %>"
           >
             <article class="post-card blog-card">
+              <% if (blog.profileImage && blog.profileImage.src) { %>
+                <img class="blog-card-image" src="<%= blog.profileImage.src %>" alt="<%= blog.profileImage.alt %>" loading="lazy" />
+              <% } %>
               <p class="post-chip"><%= blog.name %></p>
               <h2><%= blog.title %></h2>
               <p><%= blog.description %></p>
@@ -39,6 +42,9 @@
           </a>
         <% } else { %>
           <article class="post-card blog-card blog-card-is-disabled reveal-up" style="--delay: <%= 130 + (index * 60) %>ms" aria-disabled="true">
+            <% if (blog.profileImage && blog.profileImage.src) { %>
+              <img class="blog-card-image" src="<%= blog.profileImage.src %>" alt="<%= blog.profileImage.alt %>" loading="lazy" />
+            <% } %>
             <p class="post-chip"><%= blog.name %></p>
             <h2><%= blog.title %></h2>
             <p><%= blog.description %></p>

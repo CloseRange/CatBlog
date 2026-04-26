@@ -21,7 +21,16 @@
   <section class="about-card admin-main-panel reveal-up" style="--delay: 70ms">
     <% if (selectedCat) { %>
       <p class="admin-hint admin-selected-cat-copy">
-        <strong><%= selectedCat.name %></strong>: <%= selectedCat.description || "No description yet." %>
+        <strong><%= selectedCat.name %></strong>
+        <% if (selectedCat.title) { %>
+          <span>• <%= selectedCat.title %></span>
+        <% } %>
+        <br />
+        <% if (selectedCat.backstory) { %>
+          <em><%= selectedCat.backstory %></em>
+          <br />
+        <% } %>
+        <%= selectedCat.description || "No description yet." %>
       </p>
 
       <% if (saved && activeTab === "posts") { %>
@@ -41,12 +50,71 @@
           <label for="catName">Name</label>
           <input id="catName" name="name" type="text" value="<%= selectedCat.name %>" required />
 
+          <label for="catTitle">Title</label>
+          <input
+            id="catTitle"
+            name="title"
+            type="text"
+            value="<%= selectedCat.title || '' %>"
+            placeholder="The world's most overqualified cat"
+            required
+          />
+
           <label for="catSlug">Slug</label>
           <input id="catSlug" type="text" value="<%= selectedCat.slug %>" readonly />
           <p class="admin-hint">Slug stays stable because it maps to this cat's routes and bucket.</p>
 
+          <label for="catBackstory">Backstory</label>
+          <textarea id="catBackstory" name="backstory" rows="4" required><%= selectedCat.backstory || "" %></textarea>
+
           <label for="catDescription">Description</label>
           <textarea id="catDescription" name="description" rows="5" required><%= selectedCat.description || "" %></textarea>
+
+          <h2 class="admin-gallery-title">Select Profile Photo</h2>
+          <p class="admin-hint">Choose an image from this cat's gallery to use on cat cards and profile sections.</p>
+
+          <% if (selectedCat.profileImage && selectedCat.profileImage.src) { %>
+            <img
+              class="admin-profile-preview"
+              src="<%= selectedCat.profileImage.src %>"
+              alt="<%= selectedCat.profileImage.alt %>"
+              loading="lazy"
+            />
+          <% } %>
+
+          <label class="admin-checkbox admin-no-image-option">
+            <input
+              type="radio"
+              name="profileImagePath"
+              value=""
+              <%= !selectedCat.profileImageStoragePath ? "checked" : "" %>
+            />
+            No profile photo
+          </label>
+
+          <% if (!galleryImages.length) { %>
+            <p class="admin-error">No gallery images found. Upload in <a href="/admin/gallery?catId=<%= selectedCat.id %>">Manage Gallery</a>.</p>
+          <% } %>
+
+          <section class="admin-gallery-grid" aria-label="Profile photo picker">
+            <% galleryImages.forEach((image) => { %>
+              <article class="admin-gallery-card admin-gallery-picker-card">
+                <img src="<%= image.publicUrl %>" alt="<%= image.name %>" loading="lazy" />
+                <div class="admin-gallery-copy">
+                  <p class="admin-gallery-path"><code><%= image.storagePath %></code></p>
+                  <label class="admin-checkbox">
+                    <input
+                      type="radio"
+                      name="profileImagePath"
+                      value="<%= image.storagePath %>"
+                      <%= selectedCat.profileImageStoragePath === image.storagePath ? "checked" : "" %>
+                    />
+                    Use This Image
+                  </label>
+                </div>
+              </article>
+            <% }) %>
+          </section>
 
           <button class="button-primary" type="submit">Save Details</button>
         </form>
@@ -100,7 +168,11 @@
       <section class="admin-cat-grid" aria-label="Cat list">
         <% cats.forEach((cat) => { %>
           <article class="admin-cat-card">
+            <% if (cat.profileImage && cat.profileImage.src) { %>
+              <img class="admin-cat-card-image" src="<%= cat.profileImage.src %>" alt="<%= cat.profileImage.alt %>" loading="lazy" />
+            <% } %>
             <h2><%= cat.name %></h2>
+            <p class="admin-cat-title"><%= cat.title || `${cat.name}'s Logbook` %></p>
             <p><%= cat.description || "No description yet." %></p>
             <p class="admin-cat-meta"><%= cat.postCount %> post<%= cat.postCount === 1 ? "" : "s" %></p>
             <a class="button-primary" href="/admin?catId=<%= cat.id %>&tab=details">Manage <%= cat.name %></a>

@@ -25,6 +25,20 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const OPENAI_PROJECT_ID = String(process.env.OPENAI_PROJECT_ID || "").trim();
 const OPENAI_ORG_ID = String(process.env.OPENAI_ORG_ID || "").trim();
 const AI_ENABLED = Boolean(OPENAI_API_KEY);
+const DEFAULT_CAT_PROFILES = [
+  {
+    id: "java",
+    name: "Java",
+    slug: "java",
+    title: "The world's most overqualified cat",
+    backstory:
+      "Java was a real cat whose chaos, charm, and daily antics inspired this memorial archive.",
+    description:
+      "A memorial archive of Java's stories and photos, preserved with love.",
+    profile_image_storage_bucket: "",
+    profile_image_storage_path: "",
+  },
+];
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -80,6 +94,97 @@ function createSlug(title) {
     .trim()
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-");
+}
+
+function normalizeCatRecord(cat) {
+  const name = String(cat && cat.name ? cat.name : "").trim();
+  const slug = String(cat && cat.slug ? cat.slug : "").trim().toLowerCase();
+  const title = String(cat && cat.title ? cat.title : "").trim();
+  const backstory = String(cat && cat.backstory ? cat.backstory : "").trim();
+  const description = String(cat && cat.description ? cat.description : "").trim();
+  const profileImageStoragePath = normalizeFolderPath(
+    (cat &&
+      (cat.profile_image_storage_path ||
+        cat.profileImageStoragePath ||
+        cat.profileImagePath)) ||
+      ""
+  );
+  const profileImageStorageBucket = profileImageStoragePath
+    ? String(
+        (cat &&
+          (cat.profile_image_storage_bucket ||
+            cat.profileImageStorageBucket ||
+            cat.profileImageBucket)) ||
+          getSupabaseBucket()
+      ).trim()
+    : "";
+  const profileImageSrc = profileImageStoragePath
+    ? getSupabaseImageUrl(profileImageStoragePath, profileImageStorageBucket)
+    : "";
+
+  return {
+    ...cat,
+    name,
+    slug,
+    title: title || `${name}'s Logbook`,
+    backstory,
+    description,
+    profileImageStorageBucket,
+    profileImageStoragePath,
+    profileImage: profileImageStoragePath
+      ? {
+          src: profileImageSrc,
+          alt: `Profile photo of ${name || "this cat"}`,
+          storageBucket: profileImageStorageBucket,
+          storagePath: profileImageStoragePath,
+        }
+      : null,
+  };
+}
+
+async function loadCatProfiles() {
+  if (!hasSupabaseConfig() || !supabase) {
+    return DEFAULT_CAT_PROFILES.map(normalizeCatRecord);
+  }
+
+  const { data, error } = await supabase
+    .from("cats")
+    .select(
+      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
+    )
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).map(normalizeCatRecord);
+}
+
+async function fetchCatProfileBySlug(catSlug) {
+  const normalizedSlug = String(catSlug || "").trim().toLowerCase();
+  if (!normalizedSlug) {
+    return null;
+  }
+
+  if (!hasSupabaseConfig() || !supabase) {
+    const match = DEFAULT_CAT_PROFILES.find((cat) => cat.slug === normalizedSlug);
+    return match ? normalizeCatRecord(match) : null;
+  }
+
+  const { data, error } = await supabase
+    .from("cats")
+    .select(
+      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
+    )
+    .eq("slug", normalizedSlug)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ? normalizeCatRecord(data) : null;
 }
 
 function normalizeImage(image, fallbackAlt, fallbackBucket) {
@@ -674,7 +779,9 @@ function serializeImagesInput(images) {
 async function fetchAdminCats() {
   const { data, error } = await supabase
     .from("cats")
-    .select("id, name, slug, description, created_at")
+    .select(
+      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
+    )
     .order("name", { ascending: true });
 
   if (error) {
@@ -705,7 +812,7 @@ async function fetchAdminCats() {
   }, {});
 
   return cats.map((cat) => ({
-    ...cat,
+    ...normalizeCatRecord(cat),
     postCount: countsByCatId[cat.id] || 0,
   }));
 }
@@ -718,7 +825,9 @@ async function fetchAdminCatById(catId) {
 
   const { data, error } = await supabase
     .from("cats")
-    .select("id, name, slug, description")
+    .select(
+      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
+    )
     .eq("id", normalizedId)
     .maybeSingle();
 
@@ -726,21 +835,63 @@ async function fetchAdminCatById(catId) {
     throw new Error(error.message);
   }
 
-  return data || null;
+  return data ? normalizeCatRecord(data) : null;
 }
 
 async function saveAdminCatDetails(formData) {
   const catId = String(formData.catId || "").trim();
   const name = String(formData.name || "").trim();
+  const title = String(formData.title || "").trim();
+  const backstory = String(formData.backstory || "").trim();
   const description = String(formData.description || "").trim();
+  const hasProfileImageSelection = Object.prototype.hasOwnProperty.call(
+    formData,
+    "profileImagePath"
+  );
+  const profileImagePath = normalizeFolderPath(formData.profileImagePath || "");
 
-  if (!catId || !name || !description) {
-    throw new Error("Cat id, name, and description are required.");
+  if (!catId || !name || !title || !backstory || !description) {
+    throw new Error("Cat id, name, title, backstory, and description are required.");
+  }
+
+  const existingCat = await fetchAdminCatById(catId);
+  if (!existingCat) {
+    throw new Error("Cat not found.");
+  }
+
+  let profileImageStorageBucket =
+    existingCat.profileImageStorageBucket || null;
+  let profileImageStoragePath = existingCat.profileImageStoragePath || null;
+
+  if (hasProfileImageSelection && !profileImagePath) {
+    profileImageStorageBucket = null;
+    profileImageStoragePath = null;
+  }
+
+  if (hasProfileImageSelection && profileImagePath) {
+    const bucket = await ensureCatBucketExists(existingCat);
+    const folder = getFolderForCat(existingCat);
+    const galleryImages = await listBucketImages(bucket, folder);
+    const selectedImage = galleryImages.find(
+      (image) => image.storagePath === profileImagePath
+    );
+
+    if (selectedImage) {
+      profileImageStorageBucket = bucket;
+      profileImageStoragePath = selectedImage.storagePath;
+    }
   }
 
   const { data, error } = await supabase
     .from("cats")
-    .update({ name, description })
+    .update({
+      name,
+      title,
+      backstory,
+      description,
+      profile_image_storage_bucket: profileImageStorageBucket,
+      profile_image_storage_path: profileImageStoragePath,
+    })
     .eq("id", catId)
     .select("id")
     .single();
@@ -890,40 +1041,34 @@ async function saveAdminPost(formData) {
   return savedPostId;
 }
 
-app.get("/", (req, res) => {
-  const availableBlogs = [
-    {
-      key: "java",
-      name: "Java",
-      title: "Java's Logbook",
-      description:
-        "A memorial archive of Java's stories and photos, powered by Supabase content.",
-      href: "/java",
-      isLive: true,
-    },
-    {
-      key: "coming-soon",
-      name: "Next Cat",
-      title: "Future Cat Blog",
-      description:
-        "Reserved for the next cat's adventures. Keep this card as your template for adding more cats.",
-      href: "",
-      isLive: false,
-    },
-  ];
+app.get("/", async (req, res, next) => {
+  try {
+    const cats = await loadCatProfiles();
+    const availableBlogs = cats.map((cat) => ({
+      key: cat.slug,
+      name: cat.name,
+      title: cat.title,
+      description: cat.description,
+      href: cat.slug === "java" ? "/java" : "",
+      isLive: cat.slug === "java",
+      profileImage: cat.profileImage,
+    }));
 
-  return res.render("main-index", {
-    pageTitle: "Choose A Blog",
-    metaDescription:
-      "Choose which cat blog to visit. Java's memorial blog is available now, and more cats can be added later.",
-    currentPath: "/",
-    availableBlogs,
-    siteName: "CatBlog Directory",
-    siteBrand: "CatBlog Directory",
-    siteBasePath: "",
-    isJavaSite: false,
-    stylesheetPath: "/styles.css",
-  });
+    return res.render("main-index", {
+      pageTitle: "Choose A Blog",
+      metaDescription:
+        "Choose which cat blog to visit. Java's memorial blog is available now, and more cats can be added later.",
+      currentPath: "/",
+      availableBlogs,
+      siteName: "CatBlog Directory",
+      siteBrand: "CatBlog Directory",
+      siteBasePath: "",
+      isJavaSite: false,
+      stylesheetPath: "/styles.css",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/about", (req, res) => {
@@ -965,17 +1110,21 @@ app.get("/gallery", async (req, res, next) => {
 app.get("/java", async (req, res, next) => {
   try {
     const allPosts = await loadPosts({ catSlug: "java" });
+    const siteCat = await fetchCatProfileBySlug("java");
     const [featuredPost, ...latestPosts] = allPosts;
+    const siteLabel = `${(siteCat && siteCat.name) || "Java"}'s Logbook`;
 
     return res.render("index", {
-      pageTitle: "Java's Logbook",
+      pageTitle: siteLabel,
       metaDescription:
+        (siteCat && siteCat.description) ||
         "A memorial archive of Java's stories and photos, preserved with love.",
       currentPath: "/",
       featuredPost,
       posts: latestPosts,
-      siteName: "Java's Logbook",
-      siteBrand: "Java's Logbook",
+      siteCat,
+      siteName: siteLabel,
+      siteBrand: siteLabel,
       siteBasePath: "/java",
       isJavaSite: true,
       stylesheetPath: "/styles.css",
@@ -985,17 +1134,26 @@ app.get("/java", async (req, res, next) => {
   }
 });
 
-app.get("/java/about", (req, res) => {
-  res.render("about", {
-    pageTitle: "About Java",
-    metaDescription: "About Java and the memorial archive.",
-    currentPath: "/about",
-    siteName: "Java's Logbook",
-    siteBrand: "Java's Logbook",
-    siteBasePath: "/java",
-    isJavaSite: true,
-    stylesheetPath: "/styles.css",
-  });
+app.get("/java/about", async (req, res, next) => {
+  try {
+    const siteCat = await fetchCatProfileBySlug("java");
+    const siteLabel = `${(siteCat && siteCat.name) || "Java"}'s Logbook`;
+
+    res.render("about", {
+      pageTitle: `About ${(siteCat && siteCat.name) || "Java"}`,
+      metaDescription:
+        (siteCat && siteCat.description) || "About Java and the memorial archive.",
+      currentPath: "/about",
+      siteCat,
+      siteName: siteLabel,
+      siteBrand: siteLabel,
+      siteBasePath: "/java",
+      isJavaSite: true,
+      stylesheetPath: "/styles.css",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/java/gallery", async (req, res, next) => {
@@ -1608,7 +1766,15 @@ app.post(
     } catch (error) {
       const cats = await fetchAdminCats().catch(() => []);
       const selectedCat = await fetchAdminCatById(catId).catch(() => null);
+      const selectedBucket = selectedCat
+        ? await ensureCatBucketExists(selectedCat).catch(() => "")
+        : "";
+      const selectedFolder = selectedCat ? getFolderForCat(selectedCat) : "";
+      const galleryImages = selectedBucket
+        ? await listBucketImages(selectedBucket, selectedFolder).catch(() => [])
+        : [];
       const activeTab = "details";
+      const submittedProfilePath = normalizeFolderPath(req.body.profileImagePath || "");
 
       return res.status(400).render("admin-dashboard", {
         pageTitle: "Admin",
@@ -1618,13 +1784,22 @@ app.post(
         catSaved: false,
         newCatRequested: false,
         selectedCat: selectedCat
-          ? {
+          ? normalizeCatRecord({
               ...selectedCat,
               name: String(req.body.name || selectedCat.name || ""),
+              title: String(req.body.title || selectedCat.title || ""),
+              backstory: String(req.body.backstory || selectedCat.backstory || ""),
               description: String(req.body.description || selectedCat.description || ""),
-            }
+              profile_image_storage_bucket:
+                (submittedProfilePath && selectedBucket) ||
+                selectedCat.profileImageStorageBucket ||
+                "",
+              profile_image_storage_path:
+                submittedProfilePath || selectedCat.profileImageStoragePath || "",
+            })
           : null,
         cats,
+        galleryImages,
         posts: [],
         activeTab,
         error: error.message,
@@ -1649,6 +1824,14 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
     const activeTab = selectedCat
       ? (requestedTab === "posts" ? "posts" : "details")
       : "";
+    const selectedBucket = selectedCat
+      ? await ensureCatBucketExists(selectedCat)
+      : "";
+    const selectedFolder = selectedCat ? getFolderForCat(selectedCat) : "";
+    const galleryImages =
+      selectedCat && activeTab === "details"
+        ? await listBucketImages(selectedBucket, selectedFolder)
+        : [];
     const adminPosts =
       selectedCat && activeTab === "posts"
         ? await fetchAdminPosts(selectedCat.id)
@@ -1663,6 +1846,7 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
       newCatRequested: req.query.newCat === "1",
       selectedCat,
       cats,
+      galleryImages,
       posts: adminPosts,
       activeTab,
       error: "",
