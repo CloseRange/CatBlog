@@ -157,7 +157,7 @@ where post_id in (
 insert into post_images (post_id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)
 select
   p.id,
-  'catblog-' || trim(both '-' from regexp_replace(lower(c.slug), '[^a-z0-9-]+', '-', 'g')),
+  'catblog-images',
   i.storage_path,
   i.alt,
   i.caption,
@@ -239,7 +239,6 @@ from (
     )
 ) as i (slug, storage_path, alt, caption, sort_order, is_cover)
 join posts p on p.slug = i.slug
-join cats c on c.id = p.cat_id
 on conflict (post_id, storage_path) do update set
   storage_bucket = excluded.storage_bucket,
   alt = excluded.alt,

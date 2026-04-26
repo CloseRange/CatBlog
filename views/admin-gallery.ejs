@@ -7,8 +7,8 @@
     <h1><%= selectedCat ? `${selectedCat.name} Gallery Manager` : "Choose A Cat Gallery" %></h1>
     <p>
       <%= selectedCat
-        ? "Manage files in this cat's bucket: upload, rename, and delete images."
-        : "Select a cat to manage that cat's bucket and gallery assets." %>
+        ? "Manage files in this cat's folder inside the shared image bucket."
+        : "Select a cat to manage that cat's folder and gallery assets." %>
     </p>
   </section>
 
@@ -42,7 +42,7 @@
     <% } %>
 
     <% if (selectedCat) { %>
-      <p class="admin-hint"><strong>Bucket:</strong> <code><%= selectedBucket %></code></p>
+      <p class="admin-hint"><strong>Bucket:</strong> <code><%= selectedBucket %></code> <span>•</span> <strong>Folder:</strong> <code><%= selectedFolder %></code></p>
 
       <% if (uploaded) { %>
         <p class="admin-success" role="status">Image uploaded.</p>
@@ -75,7 +75,7 @@
       <% } %>
 
       <% if (galleryTab === "gallery") { %>
-        <h2 class="admin-gallery-title">Bucket Images (<%= images.length %>)</h2>
+        <h2 class="admin-gallery-title">Folder Images (<%= images.length %>)</h2>
 
         <% if (!images.length) { %>
           <p>No images found in this bucket yet.</p>

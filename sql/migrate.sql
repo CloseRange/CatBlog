@@ -82,11 +82,10 @@ alter table post_images
 add column if not exists storage_bucket text;
 
 update post_images pi
-set storage_bucket = 'catblog-' || trim(both '-' from regexp_replace(lower(c.slug), '[^a-z0-9-]+', '-', 'g'))
-from posts p
-join cats c on c.id = p.cat_id
-where pi.post_id = p.id
-  and (pi.storage_bucket is null or btrim(pi.storage_bucket) = '');
+set storage_bucket = 'catblog-images'
+where pi.storage_bucket is null
+  or btrim(pi.storage_bucket) = ''
+  or pi.storage_bucket <> 'catblog-images';
 
 alter table post_images
 alter column storage_bucket set not null;
@@ -123,47 +122,9 @@ before update on cats
 for each row
 execute function set_updated_at_timestamp();
 
-create or replace function cat_bucket_id(cat_slug text)
-returns text
-language sql
-immutable
-as $$
-  select 'catblog-' || trim(both '-' from regexp_replace(lower(coalesce(cat_slug, 'cat')), '[^a-z0-9-]+', '-', 'g'));
-$$;
-
-create or replace function ensure_cat_storage_bucket()
-returns trigger
-language plpgsql
-as $$
-declare
-  bucket_id text;
-begin
-  bucket_id := cat_bucket_id(new.slug);
-
-  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  values (
-    bucket_id,
-    bucket_id,
-    true,
-    10485760,
-    array['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif']::text[]
-  )
-  on conflict (id) do update
-  set
-    public = excluded.public,
-    file_size_limit = excluded.file_size_limit,
-    allowed_mime_types = excluded.allowed_mime_types,
-    updated_at = now();
-
-  return new;
-end;
-$$;
-
 drop trigger if exists cats_ensure_storage_bucket on cats;
-create trigger cats_ensure_storage_bucket
-after insert or update of slug on cats
-for each row
-execute function ensure_cat_storage_bucket();
+drop function if exists ensure_cat_storage_bucket();
+drop function if exists cat_bucket_id(text);
 
 drop trigger if exists post_images_set_updated_at on post_images;
 create trigger post_images_set_updated_at
@@ -172,13 +133,13 @@ for each row
 execute function set_updated_at_timestamp();
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-select
-  cat_bucket_id(c.slug) as id,
-  cat_bucket_id(c.slug) as name,
+values (
+  'catblog-images',
+  'catblog-images',
   true,
   10485760,
   array['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif']::text[]
-from cats c
+)
 on conflict (id) do update
 set
   public = excluded.public,

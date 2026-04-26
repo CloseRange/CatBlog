@@ -7,7 +7,7 @@ require("dotenv").config();
 
 const {
   createSupabaseClient,
-  getCatBucket,
+  getCatStoragePrefix,
   getSupabaseBucket,
   getSupabaseImageUrl,
   hasSupabaseConfig,
@@ -111,8 +111,7 @@ function normalizeImage(image, fallbackAlt, fallbackBucket) {
 
 function normalizePostRow(post) {
   const catName = (post.cat && post.cat.name) || "this cat";
-  const fallbackBucket =
-    (post.cat && post.cat.slug && getCatBucket(post.cat.slug)) || getSupabaseBucket();
+  const fallbackBucket = getSupabaseBucket();
   const fallbackAlt = `Photo of ${catName} for post: ${post.title}`;
   const rawImages = Array.isArray(post.post_images) ? post.post_images : [];
   const images = rawImages
@@ -136,8 +135,7 @@ function normalizePostRow(post) {
 function withComputedFields(post) {
   const words = post.body.trim().split(/\s+/).length;
   const catName = (post.cat && post.cat.name) || "this cat";
-  const fallbackBucket =
-    (post.cat && post.cat.slug && getCatBucket(post.cat.slug)) || getSupabaseBucket();
+  const fallbackBucket = getSupabaseBucket();
   const fallbackAlt = `Photo of ${catName} for post: ${post.title}`;
   const images = Array.isArray(post.images)
     ? post.images
@@ -511,8 +509,11 @@ const STORAGE_ALLOWED_MIME_TYPES = [
 ];
 
 function getBucketForCat(cat) {
-  const slug = String((cat && cat.slug) || "").trim();
-  return getCatBucket(slug);
+  return getSupabaseBucket();
+}
+
+function getFolderForCat(cat) {
+  return getCatStoragePrefix(cat && cat.slug);
 }
 
 async function ensureCatBucketExists(cat) {
@@ -556,9 +557,10 @@ async function ensureCatBucketExists(cat) {
   return bucket;
 }
 
-async function listBucketImages(bucket) {
+async function listBucketImages(bucket, prefix = "") {
   const targetBucket = String(bucket || "").trim() || getSupabaseBucket();
-  const foldersToVisit = [""];
+  const normalizedPrefix = normalizeFolderPath(prefix || "");
+  const foldersToVisit = [normalizedPrefix];
   const files = [];
 
   while (foldersToVisit.length) {
@@ -657,7 +659,7 @@ function serializeImagesInput(images) {
     .slice()
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     .map((image, index) => ({
-      storage_bucket: image.storage_bucket || image.storageBucket || "",
+      storage_bucket: image.storage_bucket || image.storageBucket || getSupabaseBucket(),
       storage_path: image.storage_path,
       alt: image.alt || "",
       caption: image.caption || "",
@@ -1144,7 +1146,8 @@ app.post(
     const aiPrompt = String(req.body.aiPrompt || "").trim();
     const selectedPath = String(req.body.selectedPath || "");
     const selectedBucket = await ensureCatBucketExists(selectedCat);
-    const galleryImages = await listBucketImages(selectedBucket).catch(() => []);
+    const selectedFolder = getFolderForCat(selectedCat);
+    const galleryImages = await listBucketImages(selectedBucket, selectedFolder).catch(() => []);
     const selectedImagesByPath = parseSingleGallerySelection(selectedPath).reduce(
       (acc, image) => {
         acc[image.storage_path] = {
@@ -1167,6 +1170,7 @@ app.post(
         mode,
         selectedCat,
         selectedBucket,
+        selectedFolder,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1199,6 +1203,7 @@ app.post(
         mode,
         selectedCat,
         selectedBucket,
+        selectedFolder,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1233,6 +1238,7 @@ app.post(
         mode,
         selectedCat,
         selectedBucket,
+        selectedFolder,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1265,6 +1271,7 @@ app.post(
         mode,
         selectedCat,
         selectedBucket,
+        selectedFolder,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1397,9 +1404,10 @@ app.get(
       const selectedBucket = selectedCat
         ? await ensureCatBucketExists(selectedCat)
         : "";
+      const selectedFolder = selectedCat ? getFolderForCat(selectedCat) : "";
       const images =
         selectedBucket && galleryTab === "gallery"
-          ? await listBucketImages(selectedBucket)
+          ? await listBucketImages(selectedBucket, selectedFolder)
           : [];
 
       res.render("admin-gallery", {
@@ -1409,6 +1417,7 @@ app.get(
         cats,
         selectedCat,
         selectedBucket,
+        selectedFolder,
         galleryTab,
         images,
         uploaded: req.query.uploaded === "1",
@@ -1675,7 +1684,8 @@ app.get(
       }
 
       const selectedBucket = await ensureCatBucketExists(selectedCat);
-      const galleryImages = await listBucketImages(selectedBucket);
+      const selectedFolder = getFolderForCat(selectedCat);
+      const galleryImages = await listBucketImages(selectedBucket, selectedFolder);
 
       res.render("admin-form", {
         pageTitle: "New Post",
@@ -1685,6 +1695,7 @@ app.get(
         mode: "create",
         selectedCat,
         selectedBucket,
+        selectedFolder,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath: {},
@@ -1725,7 +1736,8 @@ app.get(
       }
 
       const selectedBucket = await ensureCatBucketExists(selectedCat);
-      const galleryImages = await listBucketImages(selectedBucket);
+      const selectedFolder = getFolderForCat(selectedCat);
+      const galleryImages = await listBucketImages(selectedBucket, selectedFolder);
       const selectedImagesByPath = (post.post_images || []).reduce((acc, image) => {
         acc[image.storage_path] = {
           alt: image.alt || "",
@@ -1748,6 +1760,7 @@ app.get(
         mode: "edit",
         selectedCat,
         selectedBucket,
+        selectedFolder,
         catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
@@ -1792,7 +1805,8 @@ app.post(
       const selectedBucket = selectedCat
         ? await ensureCatBucketExists(selectedCat).catch(() => "")
         : "";
-      const galleryImages = await listBucketImages(selectedBucket).catch(() => []);
+      const selectedFolder = selectedCat ? getFolderForCat(selectedCat) : "";
+      const galleryImages = await listBucketImages(selectedBucket, selectedFolder).catch(() => []);
       const selectedImagesByPath = parseSingleGallerySelection(
         req.body.selectedPath
       ).reduce((acc, image) => {
@@ -1813,6 +1827,7 @@ app.post(
         mode: req.body.postId ? "edit" : "create",
         selectedCat,
         selectedBucket,
+        selectedFolder,
         catId,
         galleryImages,
         selectedImagesByPath,
