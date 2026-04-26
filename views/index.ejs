@@ -75,26 +75,30 @@
     <h2>Stories From <%= siteCat ? `${siteCat.name}'s Logbook` : "Java's Logbook" %></h2>
   </section>
 
-  <section class="posts-grid" aria-label="Recent blog posts">
+  <section class="posts-grid post-archive-grid" aria-label="Recent blog posts">
     <% posts.forEach((post, index) => { %>
-      <article class="post-card reveal-up" style="--delay: <%= 170 + (index * 90) %>ms">
-        <% if (post.coverImage) { %>
-          <img
-            class="post-image"
-            src="<%= post.coverImage.src %>"
-            alt="<%= post.coverImage.alt %>"
-            loading="lazy"
-          />
-        <% } %>
-        <p class="post-meta">
-          <span><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></span>
-          <span><%= post.readMinutes %> min read</span>
-        </p>
-        <h2><a href="<%= postBase %>/<%= post.slug %>"><%= post.title %></a></h2>
-        <p><%= post.shortBody %></p>
-        <p class="post-chip"><%= post.mood %></p>
-        <a class="read-link" href="<%= postBase %>/<%= post.slug %>">Read full entry</a>
-      </article>
+      <a
+        class="post-card-link reveal-up"
+        href="<%= postBase %>/<%= post.slug %>"
+        style="--delay: <%= 170 + (index * 90) %>ms"
+        aria-label="Read post: <%= post.title %>"
+      >
+        <article class="post-card post-archive-card">
+          <% if (post.coverImage) { %>
+            <img
+              class="post-image"
+              src="<%= post.coverImage.src %>"
+              alt="<%= post.coverImage.alt %>"
+              loading="lazy"
+            />
+          <% } %>
+          <p class="post-meta">
+            <span><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></span>
+            <span><%= post.readMinutes %> min read</span>
+          </p>
+          <h2><%= post.title %></h2>
+        </article>
+      </a>
     <% }) %>
   </section>
 

@@ -30,6 +30,7 @@ const DEFAULT_CAT_PROFILES = [
     id: "java",
     name: "Java",
     slug: "java",
+    tag: "Memorial Archive",
     title: "The world's most overqualified cat",
     backstory:
       "Java was a real cat whose chaos, charm, and daily antics inspired this memorial archive.",
@@ -99,6 +100,7 @@ function createSlug(title) {
 function normalizeCatRecord(cat) {
   const name = String(cat && cat.name ? cat.name : "").trim();
   const slug = String(cat && cat.slug ? cat.slug : "").trim().toLowerCase();
+  const tag = String(cat && cat.tag ? cat.tag : "").trim();
   const title = String(cat && cat.title ? cat.title : "").trim();
   const backstory = String(cat && cat.backstory ? cat.backstory : "").trim();
   const description = String(cat && cat.description ? cat.description : "").trim();
@@ -126,6 +128,7 @@ function normalizeCatRecord(cat) {
     ...cat,
     name,
     slug,
+    tag,
     title: title || `${name}'s Logbook`,
     backstory,
     description,
@@ -150,7 +153,7 @@ async function loadCatProfiles() {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
+      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
     )
     .order("name", { ascending: true });
 
@@ -175,7 +178,7 @@ async function fetchCatProfileBySlug(catSlug) {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
+      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
     )
     .eq("slug", normalizedSlug)
     .maybeSingle();
@@ -780,7 +783,7 @@ async function fetchAdminCats() {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
+      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
     )
     .order("name", { ascending: true });
 
@@ -826,7 +829,7 @@ async function fetchAdminCatById(catId) {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
+      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
     )
     .eq("id", normalizedId)
     .maybeSingle();
@@ -841,6 +844,7 @@ async function fetchAdminCatById(catId) {
 async function saveAdminCatDetails(formData) {
   const catId = String(formData.catId || "").trim();
   const name = String(formData.name || "").trim();
+  const tag = String(formData.tag || "").trim();
   const title = String(formData.title || "").trim();
   const backstory = String(formData.backstory || "").trim();
   const description = String(formData.description || "").trim();
@@ -886,6 +890,7 @@ async function saveAdminCatDetails(formData) {
     .from("cats")
     .update({
       name,
+      tag,
       title,
       backstory,
       description,
@@ -1047,6 +1052,7 @@ app.get("/", async (req, res, next) => {
     const availableBlogs = cats.map((cat) => ({
       key: cat.slug,
       name: cat.name,
+      tag: cat.tag,
       title: cat.title,
       description: cat.description,
       href: cat.slug === "java" ? "/java" : "",
@@ -1787,6 +1793,7 @@ app.post(
           ? normalizeCatRecord({
               ...selectedCat,
               name: String(req.body.name || selectedCat.name || ""),
+              tag: String(req.body.tag || selectedCat.tag || ""),
               title: String(req.body.title || selectedCat.title || ""),
               backstory: String(req.body.backstory || selectedCat.backstory || ""),
               description: String(req.body.description || selectedCat.description || ""),

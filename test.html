@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Michael Hulbert Photography</title>
+
+  <style>
+    :root {
+      --leaf: #6f9f5f;
+      --leaf-dark: #3f6f3d;
+      --cream: #fff8e8;
+      --sun: #ffd36e;
+      --rose: #f6b6b6;
+      --sky: #cfefff;
+      --text: #2d3a2e;
+      --card: rgba(255, 255, 255, 0.82);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Trebuchet MS", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, #dff6d8, transparent 35%),
+        radial-gradient(circle at top right, #cfefff, transparent 30%),
+        linear-gradient(180deg, var(--cream), #eaf7df);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 5rem 1rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: "🌿 🐌 🌼 🦋 🍄";
+      position: absolute;
+      top: 1rem;
+      left: 0;
+      width: 100%;
+      font-size: 2rem;
+      opacity: 0.8;
+      letter-spacing: 1rem;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--sun);
+      color: #5a4312;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 8vw, 5.5rem);
+      color: var(--leaf-dark);
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      max-width: 700px;
+      margin: 0 auto;
+      color: #526252;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(12px);
+      background: rgba(255, 248, 232, 0.75);
+      border-bottom: 1px solid rgba(111, 159, 95, 0.25);
+    }
+
+    nav a {
+      color: var(--leaf-dark);
+      text-decoration: none;
+      font-weight: bold;
+      background: white;
+      padding: 0.6rem 1rem;
+      border-radius: 999px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      transition: 0.2s;
+    }
+
+    nav a:hover {
+      transform: translateY(-2px);
+      background: var(--leaf);
+      color: white;
+    }
+
+    section {
+      padding: 4rem 1.25rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 2.4rem;
+      color: var(--leaf-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .section-note {
+      text-align: center;
+      color: #5e6b5f;
+      margin-bottom: 2.5rem;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .photo-card {
+      background: var(--card);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(70, 90, 60, 0.18);
+      border: 3px solid white;
+      transition: 0.25s ease;
+    }
+
+    .photo-card:hover {
+      transform: translateY(-8px) rotate(-1deg);
+      box-shadow: 0 18px 40px rgba(70, 90, 60, 0.28);
+    }
+
+    .photo {
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .photo.one {
+      background: linear-gradient(135deg, #b7e4a8, #f7e7a1);
+    }
+
+    .photo.two {
+      background: linear-gradient(135deg, #a7d8ff, #d9f7c5);
+    }
+
+    .photo.three {
+      background: linear-gradient(135deg, #ffd1dc, #d9ffd6);
+    }
+
+    .photo.four {
+      background: linear-gradient(135deg, #c7b7ff, #c9ffe8);
+    }
+
+    .photo.five {
+      background: linear-gradient(135deg, #ffe0a3, #b6e3b6);
+    }
+
+    .photo.six {
+      background: linear-gradient(135deg, #b5ead7, #fff1a8);
+    }
+
+    .photo-card div.content {
+      padding: 1.25rem;
+    }
+
+    .photo-card h3 {
+      color: var(--leaf-dark);
+      margin-bottom: 0.4rem;
+      font-size: 1.35rem;
+    }
+
+    .photo-card p {
+      color: #5c695d;
+      line-height: 1.5;
+    }
+
+    .about {
+      background: rgba(255,255,255,0.65);
+      border-radius: 32px;
+      padding: 2rem;
+      box-shadow: 0 10px 28px rgba(70, 90, 60, 0.14);
+      border: 2px solid white;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--leaf), var(--sky));
+      display: grid;
+      place-items: center;
+      font-size: 5rem;
+      border: 6px solid white;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .about p {
+      line-height: 1.8;
+      font-size: 1.05rem;
+      color: #4f5c50;
+    }
+
+    .contact-box {
+      text-align: center;
+      background: var(--leaf-dark);
+      color: white;
+      border-radius: 32px;
+      padding: 3rem 1.5rem;
+      box-shadow: 0 14px 36px rgba(63, 111, 61, 0.3);
+    }
+
+    .contact-box h2 {
+      font-size: 2.3rem;
+      margin-bottom: 1rem;
+    }
+
+    .contact-box p {
+      margin-bottom: 1.5rem;
+      color: #ecffe8;
+    }
+
+    .button {
+      display: inline-block;
+      background: var(--sun);
+      color: #4a3911;
+      padding: 0.85rem 1.4rem;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .button:hover {
+      transform: scale(1.05);
+      background: #ffe08a;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #5f705f;
+    }
+
+    @media (max-width: 700px) {
+      .about {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      header::before {
+        font-size: 1.3rem;
+        letter-spacing: 0.3rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="badge">Nature Photography Portfolio</div>
+    <h1>Michael Hulbert</h1>
+    <p class="subtitle">
+      Soft light, quiet trails, tiny forest friends, and the little magical moments hiding in nature.
+    </p>
+  </header>
+
+  <nav>
+    <a href="#gallery">Gallery</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+  </nav>
+
+  <section id="gallery">
+    <h2 class="section-title">Photography Gallery</h2>
+    <p class="section-note">Replace these cute placeholders with your own photos.</p>
+
+    <div class="gallery">
+      <article class="photo-card">
+        <div class="photo one">🌲</div>
+        <div class="content">
+          <h3>Forest Morning</h3>
+          <p>A peaceful woodland scene filled with fresh air, green leaves, and soft sunlight.</p>
+        </div>
+      </article>
+
+      <article class="photo-card">
+        <div class="photo two">🦋</div>
+        <div class="content">
+          <h3>Butterfly Sky</h3>
+          <p>Gentle skies and delicate wings, capturing the tiny beauty of the outdoors.</p>
+        </div>
+      </article>
+
+      <article class="photo-card">
+        <div class="photo three">🌸</div>
+        <div class="content">
+          <h3>Blooming Path</h3>
+          <p>Flowers, color, and a cozy trail that feels like walking through a storybook.</p>
+        </div>
+      </article>
+
+      <article class="photo-card">
+        <div class="photo four">🍄</div>
+        <div class="content">
+          <h3>Mushroom Hideaway</h3>
+          <p>A cute little nature moment tucked close to the ground, full of forest charm.</p>
+        </div>
+      </article>
+
+      <article class="photo-card">
+        <div class="photo five">☀️</div>
+        <div class="content">
+          <h3>Golden Hour</h3>
+          <p>Warm sunlight spilling across the landscape, soft and dreamy.</p>
+        </div>
+      </article>
+
+      <article class="photo-card">
+        <div class="photo six">🐌</div>
+        <div class="content">
+          <h3>Little Explorer</h3>
+          <p>A tiny creature making its way through a big beautiful world.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="about">
+    <h2 class="section-title">About Michael</h2>
+    <p class="section-note">A little bit about the photographer.</p>
+
+    <div class="about">
+      <div class="avatar">📷</div>
+      <div>
+        <p>
+          Hi, I’m Michael Hulbert. I love capturing the calm, cute, and magical side of nature.
+          My photography focuses on peaceful outdoor moments, soft natural light, plants,
+          animals, textures, and the small details people often miss.
+        </p>
+        <br />
+        <p>
+          This portfolio is designed to feel warm, friendly, and nature-inspired — a cozy place
+          to display my favorite photos and share the beauty I find outside.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="contact-box">
+      <h2>Let’s Create Something Beautiful</h2>
+      <p>
+        Interested in prints, photoshoots, collaborations, or just want to say hi?
+      </p>
+      <a class="button" href="mailto:your-email@example.com">Contact Michael</a>
+    </div>
+  </section>
+
+  <footer>
+    <p>🌿 © 2026 Michael Hulbert Photography 🌿</p>
+  </footer>
+</body>
+</html>

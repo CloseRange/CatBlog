@@ -22,6 +22,9 @@
     <% if (selectedCat) { %>
       <p class="admin-hint admin-selected-cat-copy">
         <strong><%= selectedCat.name %></strong>
+        <% if (selectedCat.tag) { %>
+          <span>• <%= selectedCat.tag %></span>
+        <% } %>
         <% if (selectedCat.title) { %>
           <span>• <%= selectedCat.title %></span>
         <% } %>
@@ -58,6 +61,15 @@
             value="<%= selectedCat.title || '' %>"
             placeholder="The world's most overqualified cat"
             required
+          />
+
+          <label for="catTag">Tag</label>
+          <input
+            id="catTag"
+            name="tag"
+            type="text"
+            value="<%= selectedCat.tag || '' %>"
+            placeholder="Memorial Archive"
           />
 
           <label for="catSlug">Slug</label>

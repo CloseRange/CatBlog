@@ -1,20 +1,22 @@
 begin;
 
-with seed_cats (name, slug, title, backstory, description) as (
+with seed_cats (name, slug, tag, title, backstory, description) as (
   values
     (
       'Java',
       'java',
+      'Memorial Archive',
       'The world''s most overqualified cat',
       'Java was a real cat whose chaos, charm, and daily antics inspired this memorial archive.',
       'A fearless food critic, midnight sprinter, and chaos coordinator with excellent whiskers.'
     )
 ), upserted_cats as (
-  insert into cats (name, slug, title, backstory, description)
-  select name, slug, title, backstory, description
+  insert into cats (name, slug, tag, title, backstory, description)
+  select name, slug, tag, title, backstory, description
   from seed_cats
   on conflict (slug) do update set
     name = excluded.name,
+    tag = excluded.tag,
     title = excluded.title,
     backstory = excluded.backstory,
     description = excluded.description,

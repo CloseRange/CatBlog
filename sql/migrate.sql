@@ -6,6 +6,7 @@ create table if not exists cats (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
+  tag text not null default '',
   title text not null default '',
   backstory text not null default '',
   description text not null default '',
@@ -19,6 +20,9 @@ alter table cats
 add column if not exists title text not null default '';
 
 alter table cats
+add column if not exists tag text not null default '';
+
+alter table cats
 add column if not exists backstory text not null default '';
 
 alter table cats
@@ -27,10 +31,11 @@ add column if not exists profile_image_storage_bucket text;
 alter table cats
 add column if not exists profile_image_storage_path text;
 
-insert into cats (name, slug, title, backstory, description)
+insert into cats (name, slug, tag, title, backstory, description)
 values (
   'Java',
   'java',
+  'Memorial Archive',
   'The world''s most overqualified cat',
   'Java was a real cat whose chaos, charm, and daily antics inspired this memorial archive.',
   'A brave and chaotic storyteller who turned every day into an adventure log.'
@@ -38,6 +43,7 @@ values (
 on conflict (slug) do update
 set
   name = excluded.name,
+  tag = excluded.tag,
   title = excluded.title,
   backstory = excluded.backstory,
   description = excluded.description,
