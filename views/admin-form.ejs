@@ -8,12 +8,12 @@
     <p>Manage content and image entries from Supabase for <strong><%= selectedCat ? selectedCat.name : "this cat" %></strong>.</p>
   </section>
 
-  <section class="about-card reveal-up" style="--delay: 70ms">
-    <div class="admin-toolbar">
-      <a class="button-ghost" href="/admin?catId=<%= catId || (selectedCat && selectedCat.id) || "" %>">Back To <%= selectedCat ? selectedCat.name : "Admin" %></a>
-      <a class="button-ghost" href="/admin/gallery?catId=<%= catId || (selectedCat && selectedCat.id) || "" %>">Manage Gallery</a>
-      <a class="button-ghost" href="/">View Site</a>
-    </div>
+  <section class="reveal-up" style="--delay: 60ms">
+    <% const activeTab = mode === "create" ? "new" : "posts"; %>
+    <%- include("partials/admin-cat-tabs", { selectedCat, activeTab }) %>
+  </section>
+
+  <section class="about-card admin-main-panel reveal-up" style="--delay: 70ms">
 
     <% if (saved) { %>
       <p class="admin-success" role="status">Saved.</p>

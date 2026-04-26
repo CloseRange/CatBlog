@@ -601,6 +601,76 @@ button:focus-visible {
   overflow-x: auto;
 }
 
+.admin-tabs-wrap {
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.3rem;
+  border-bottom: none;
+  padding-bottom: 0;
+  overflow-x: auto;
+}
+
+.admin-main-panel {
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.admin-tab {
+  position: relative;
+  margin-bottom: 0;
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--accent-2);
+  background: rgba(201, 191, 164, 0.92);
+  border: none;
+  border-radius: 10px 10px 0 0;
+  padding: 0.46rem 0.95rem 0.52rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0.95;
+  transition: background 160ms ease, padding 160ms ease, opacity 160ms ease;
+}
+
+.admin-tab:hover {
+  padding-top: 0.66rem;
+  opacity: 1;
+}
+
+.admin-tab.is-active {
+  background: var(--card);
+  color: var(--accent-2);
+  padding-top: 0.86rem;
+  opacity: 1;
+  z-index: 1;
+}
+
+.admin-tab.is-active:hover {
+  padding-top: 0.86rem;
+}
+
+.admin-tab-spacer {
+  margin-left: auto;
+}
+
+.admin-tab-admin {
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .admin-tabs-wrap {
+    margin-bottom: 0;
+  }
+}
+
 .admin-selected-cat-copy {
   margin-bottom: 0.9rem;
 }

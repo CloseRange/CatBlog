@@ -4,64 +4,87 @@
 <main id="main-content" class="main-shell">
   <section class="section-head reveal-up">
     <p class="eyebrow">Admin</p>
-    <h1><%= selectedCat ? `${selectedCat.name} Post Manager` : "Choose A Cat" %></h1>
+    <h1><%= selectedCat ? `${selectedCat.name} Manager` : "Choose A Cat" %></h1>
     <p>
       <%= selectedCat
-        ? "Create new posts and edit existing posts and image metadata for this cat."
+        ? "Use tabs to manage this cat's details, posts, new entries, and gallery."
         : "Start by selecting a cat card to manage that cat's posts and images." %>
     </p>
   </section>
 
-  <section class="about-card reveal-up" style="--delay: 70ms">
-    <% if (selectedCat) { %>
-      <div class="admin-toolbar">
-        <a class="button-ghost" href="/admin">All Cats</a>
-        <a class="button-primary" href="/admin/new?catId=<%= selectedCat.id %>">New Post</a>
-        <a class="button-ghost" href="/admin/gallery?catId=<%= selectedCat.id %>">Manage Gallery</a>
-        <form method="post" action="/admin/logout">
-          <button class="button-ghost" type="submit">Logout</button>
-        </form>
-      </div>
+  <% if (selectedCat) { %>
+    <section class="reveal-up" style="--delay: 60ms">
+      <%- include("partials/admin-cat-tabs") %>
+    </section>
+  <% } %>
 
+  <section class="about-card admin-main-panel reveal-up" style="--delay: 70ms">
+    <% if (selectedCat) { %>
       <p class="admin-hint admin-selected-cat-copy">
         <strong><%= selectedCat.name %></strong>: <%= selectedCat.description || "No description yet." %>
       </p>
 
-      <% if (saved) { %>
+      <% if (saved && activeTab === "posts") { %>
         <p class="admin-success" role="status">Post saved successfully.</p>
       <% } %>
+      <% if (catSaved && activeTab === "details") { %>
+        <p class="admin-success" role="status">Cat details saved.</p>
+      <% } %>
+      <% if (error) { %>
+        <p class="admin-error" role="alert"><%= error %></p>
+      <% } %>
 
-      <div class="admin-table-wrap">
-        <table class="admin-table" aria-label="Post list">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Date</th>
-              <th>Mood</th>
-              <th>Slug</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (!posts.length) { %>
+      <% if (activeTab === "details") { %>
+        <form class="admin-form-grid" method="post" action="/admin/cat/save">
+          <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
+
+          <label for="catName">Name</label>
+          <input id="catName" name="name" type="text" value="<%= selectedCat.name %>" required />
+
+          <label for="catSlug">Slug</label>
+          <input id="catSlug" type="text" value="<%= selectedCat.slug %>" readonly />
+          <p class="admin-hint">Slug stays stable because it maps to this cat's routes and bucket.</p>
+
+          <label for="catDescription">Description</label>
+          <textarea id="catDescription" name="description" rows="5" required><%= selectedCat.description || "" %></textarea>
+
+          <button class="button-primary" type="submit">Save Details</button>
+        </form>
+      <% } %>
+
+      <% if (activeTab === "posts") { %>
+        <div class="admin-table-wrap">
+          <table class="admin-table" aria-label="Post list">
+            <thead>
               <tr>
-                <td colspan="5">No posts yet for <%= selectedCat.name %>. Create the first one.</td>
+                <th>Title</th>
+                <th>Date</th>
+                <th>Mood</th>
+                <th>Slug</th>
+                <th>Actions</th>
               </tr>
-            <% } %>
-            <% posts.forEach((post) => { %>
-              <tr>
-                <td><%= post.title %></td>
-                <td><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></td>
-                <td><%= post.mood %></td>
-                <td><code><%= post.slug %></code></td>
-                <td>
-                  <a class="read-link" href="/admin/edit/<%= post.id %>?catId=<%= selectedCat.id %>">Edit</a>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              <% if (!posts.length) { %>
+                <tr>
+                  <td colspan="5">No posts yet for <%= selectedCat.name %>. Create the first one.</td>
+                </tr>
+              <% } %>
+              <% posts.forEach((post) => { %>
+                <tr>
+                  <td><%= post.title %></td>
+                  <td><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></td>
+                  <td><%= post.mood %></td>
+                  <td><code><%= post.slug %></code></td>
+                  <td>
+                    <a class="read-link" href="/admin/edit/<%= post.id %>?catId=<%= selectedCat.id %>">Edit</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
     <% } else { %>
       <div class="admin-toolbar">
         <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
@@ -80,7 +103,7 @@
             <h2><%= cat.name %></h2>
             <p><%= cat.description || "No description yet." %></p>
             <p class="admin-cat-meta"><%= cat.postCount %> post<%= cat.postCount === 1 ? "" : "s" %></p>
-            <a class="button-primary" href="/admin?catId=<%= cat.id %>">Manage <%= cat.name %></a>
+            <a class="button-primary" href="/admin?catId=<%= cat.id %>&tab=details">Manage <%= cat.name %></a>
           </article>
         <% }) %>
 

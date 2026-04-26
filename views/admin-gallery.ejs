@@ -12,17 +12,22 @@
     </p>
   </section>
 
-  <section class="about-card reveal-up" style="--delay: 70ms">
-    <div class="admin-toolbar">
-      <a class="button-ghost" href="/admin">Back To Admin</a>
-      <% if (selectedCat) { %>
-        <a class="button-ghost" href="/admin?catId=<%= selectedCat.id %>">Back To <%= selectedCat.name %> Posts</a>
-        <a class="button-ghost" href="/admin/new?catId=<%= selectedCat.id %>">New Post</a>
-      <% } %>
-      <form method="post" action="/admin/logout">
-        <button class="button-ghost" type="submit">Logout</button>
-      </form>
-    </div>
+  <% if (selectedCat) { %>
+    <section class="reveal-up" style="--delay: 60ms">
+      <%- include("partials/admin-cat-tabs", { selectedCat, activeTab: galleryTab }) %>
+    </section>
+  <% } %>
+
+  <section class="about-card admin-main-panel reveal-up" style="--delay: 70ms">
+    <% if (selectedCat) { %>
+    <% } else { %>
+      <div class="admin-toolbar">
+        <a class="button-ghost" href="/admin">Back To Admin</a>
+        <form method="post" action="/admin/logout">
+          <button class="button-ghost" type="submit">Logout</button>
+        </form>
+      </div>
+    <% } %>
 
     <% if (!selectedCat) { %>
       <section class="admin-cat-grid" aria-label="Cat galleries">
@@ -52,55 +57,59 @@
         <p class="admin-error" role="alert"><%= error %></p>
       <% } %>
 
-      <form class="admin-form-grid admin-upload-form" method="post" action="/admin/gallery/upload" enctype="multipart/form-data">
-        <h2>Upload New Image</h2>
+      <% if (galleryTab === "upload") { %>
+        <form class="admin-form-grid admin-upload-form" method="post" action="/admin/gallery/upload" enctype="multipart/form-data">
+          <h2>Upload New Image</h2>
 
-        <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
+          <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
 
-        <label for="galleryUploadFile">Image File</label>
-        <input id="galleryUploadFile" name="imageFile" type="file" accept="image/*" required />
+          <label for="galleryUploadFile">Image File</label>
+          <input id="galleryUploadFile" name="imageFile" type="file" accept="image/*" required />
 
-        <label for="galleryUploadFolder">Folder</label>
-        <input id="galleryUploadFolder" name="folder" type="text" value="<%= selectedCat.slug %>" />
-        <p class="admin-hint">Example: <code><%= selectedCat.slug %></code> or <code><%= selectedCat.slug %>/2026</code></p>
+          <label for="galleryUploadFolder">Folder</label>
+          <input id="galleryUploadFolder" name="folder" type="text" value="<%= selectedCat.slug %>" />
+          <p class="admin-hint">Example: <code><%= selectedCat.slug %></code> or <code><%= selectedCat.slug %>/2026</code></p>
 
-        <button class="button-primary" type="submit">Upload Image</button>
-      </form>
-
-      <h2 class="admin-gallery-title">Bucket Images (<%= images.length %>)</h2>
-
-      <% if (!images.length) { %>
-        <p>No images found in this bucket yet.</p>
+          <button class="button-primary" type="submit">Upload Image</button>
+        </form>
       <% } %>
 
-      <section class="admin-gallery-grid" aria-label="Bucket images">
-        <% images.forEach((image) => { %>
-          <article class="admin-gallery-card">
-            <img src="<%= image.publicUrl %>" alt="<%= image.name %>" loading="lazy" />
-            <div class="admin-gallery-copy">
-              <p class="admin-gallery-path"><code><%= image.storagePath %></code></p>
-              <p class="admin-hint">
-                <% if (image.mimeType) { %><span><%= image.mimeType %></span><% } %>
-                <% if (image.size) { %><span> • <%= Math.round(image.size / 1024) %> KB</span><% } %>
-              </p>
+      <% if (galleryTab === "gallery") { %>
+        <h2 class="admin-gallery-title">Bucket Images (<%= images.length %>)</h2>
 
-              <form class="admin-rename-form" method="post" action="/admin/gallery/rename">
-                <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
-                <input type="hidden" name="oldPath" value="<%= image.storagePath %>" />
-                <label>Rename Path</label>
-                <input name="newPath" type="text" value="<%= image.storagePath %>" required />
-                <button class="button-ghost" type="submit">Rename</button>
-              </form>
+        <% if (!images.length) { %>
+          <p>No images found in this bucket yet.</p>
+        <% } %>
 
-              <form method="post" action="/admin/gallery/delete" onsubmit="return confirm('Delete this image from this cat bucket? This also removes post references.');">
-                <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
-                <input type="hidden" name="storagePath" value="<%= image.storagePath %>" />
-                <button class="button-danger" type="submit">Delete</button>
-              </form>
-            </div>
-          </article>
-        <% }) %>
-      </section>
+        <section class="admin-gallery-grid" aria-label="Bucket images">
+          <% images.forEach((image) => { %>
+            <article class="admin-gallery-card">
+              <img src="<%= image.publicUrl %>" alt="<%= image.name %>" loading="lazy" />
+              <div class="admin-gallery-copy">
+                <p class="admin-gallery-path"><code><%= image.storagePath %></code></p>
+                <p class="admin-hint">
+                  <% if (image.mimeType) { %><span><%= image.mimeType %></span><% } %>
+                  <% if (image.size) { %><span> • <%= Math.round(image.size / 1024) %> KB</span><% } %>
+                </p>
+
+                <form class="admin-rename-form" method="post" action="/admin/gallery/rename">
+                  <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
+                  <input type="hidden" name="oldPath" value="<%= image.storagePath %>" />
+                  <label>Rename Path</label>
+                  <input name="newPath" type="text" value="<%= image.storagePath %>" required />
+                  <button class="button-ghost" type="submit">Rename</button>
+                </form>
+
+                <form method="post" action="/admin/gallery/delete" onsubmit="return confirm('Delete this image from this cat bucket? This also removes post references.');">
+                  <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
+                  <input type="hidden" name="storagePath" value="<%= image.storagePath %>" />
+                  <button class="button-danger" type="submit">Delete</button>
+                </form>
+              </div>
+            </article>
+          <% }) %>
+        </section>
+      <% } %>
     <% } %>
   </section>
 </main>

@@ -1,0 +1,42 @@
+<div class="admin-tabs-wrap" role="navigation" aria-label="Cat admin sections">
+  <div class="admin-tabs" role="tablist" aria-label="Cat admin tabs">
+    <a
+      class="admin-tab <%= activeTab === "details" ? "is-active" : "" %>"
+      href="/admin?catId=<%= selectedCat.id %>&tab=details"
+      role="tab"
+      aria-selected="<%= activeTab === "details" ? "true" : "false" %>"
+    >Details</a>
+    <a
+      class="admin-tab <%= activeTab === "posts" ? "is-active" : "" %>"
+      href="/admin?catId=<%= selectedCat.id %>&tab=posts"
+      role="tab"
+      aria-selected="<%= activeTab === "posts" ? "true" : "false" %>"
+    >Posts</a>
+    <a
+      class="admin-tab <%= activeTab === "new" ? "is-active" : "" %>"
+      href="/admin/new?catId=<%= selectedCat.id %>"
+      role="tab"
+      aria-selected="<%= activeTab === "new" ? "true" : "false" %>"
+    >New Post</a>
+    <a
+      class="admin-tab <%= activeTab === "gallery" ? "is-active" : "" %>"
+      href="/admin/gallery?catId=<%= selectedCat.id %>&tab=gallery"
+      role="tab"
+      aria-selected="<%= activeTab === "gallery" ? "true" : "false" %>"
+    >Gallery</a>
+    <a
+      class="admin-tab <%= activeTab === "upload" ? "is-active" : "" %>"
+      href="/admin/gallery?catId=<%= selectedCat.id %>&tab=upload"
+      role="tab"
+      aria-selected="<%= activeTab === "upload" ? "true" : "false" %>"
+    >Upload Image</a>
+
+    <span class="admin-tab-spacer" aria-hidden="true"></span>
+    <a
+      class="admin-tab admin-tab-admin"
+      href="/admin"
+      role="tab"
+      aria-selected="false"
+    >Admin</a>
+  </div>
+</div>

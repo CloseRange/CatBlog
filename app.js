@@ -727,6 +727,29 @@ async function fetchAdminCatById(catId) {
   return data || null;
 }
 
+async function saveAdminCatDetails(formData) {
+  const catId = String(formData.catId || "").trim();
+  const name = String(formData.name || "").trim();
+  const description = String(formData.description || "").trim();
+
+  if (!catId || !name || !description) {
+    throw new Error("Cat id, name, and description are required.");
+  }
+
+  const { data, error } = await supabase
+    .from("cats")
+    .update({ name, description })
+    .eq("id", catId)
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data.id;
+}
+
 async function fetchAdminPosts(catId) {
   const normalizedCatId = String(catId || "").trim();
   let query = supabase
@@ -1361,6 +1384,7 @@ app.get(
     try {
       const cats = await fetchAdminCats();
       const requestedCatId = String(req.query.catId || "").trim();
+      const requestedTab = String(req.query.tab || "").trim().toLowerCase();
       const selectedCat = requestedCatId
         ? await fetchAdminCatById(requestedCatId)
         : null;
@@ -1369,10 +1393,14 @@ app.get(
         return res.redirect("/admin/gallery");
       }
 
+      const galleryTab = requestedTab === "upload" ? "upload" : "gallery";
       const selectedBucket = selectedCat
         ? await ensureCatBucketExists(selectedCat)
         : "";
-      const images = selectedBucket ? await listBucketImages(selectedBucket) : [];
+      const images =
+        selectedBucket && galleryTab === "gallery"
+          ? await listBucketImages(selectedBucket)
+          : [];
 
       res.render("admin-gallery", {
         pageTitle: "Admin Gallery",
@@ -1381,6 +1409,7 @@ app.get(
         cats,
         selectedCat,
         selectedBucket,
+        galleryTab,
         images,
         uploaded: req.query.uploaded === "1",
         deleted: req.query.deleted === "1",
@@ -1436,11 +1465,15 @@ app.post(
         throw new Error(error.message);
       }
 
-      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&uploaded=1`);
+      return res.redirect(
+        `/admin/gallery?catId=${encodeURIComponent(catId)}&tab=upload&uploaded=1`
+      );
     } catch (error) {
       const catId = String(req.body.catId || "").trim();
       const catQuery = catId ? `catId=${encodeURIComponent(catId)}&` : "";
-      return res.redirect(`/admin/gallery?${catQuery}error=${encodeURIComponent(error.message)}`);
+      return res.redirect(
+        `/admin/gallery?${catQuery}tab=upload&error=${encodeURIComponent(error.message)}`
+      );
     }
   }
 );
@@ -1459,7 +1492,7 @@ app.post(
 
       const storagePath = normalizeFolderPath(req.body.storagePath || "");
       if (!storagePath) {
-        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=Image+path+is+required`);
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&tab=gallery&error=Image+path+is+required`);
       }
 
       const bucket = await ensureCatBucketExists(selectedCat);
@@ -1481,11 +1514,13 @@ app.post(
         throw new Error(relationError.message);
       }
 
-      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&deleted=1`);
+      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&tab=gallery&deleted=1`);
     } catch (error) {
       const catId = String(req.body.catId || "").trim();
       const catQuery = catId ? `catId=${encodeURIComponent(catId)}&` : "";
-      return res.redirect(`/admin/gallery?${catQuery}error=${encodeURIComponent(error.message)}`);
+      return res.redirect(
+        `/admin/gallery?${catQuery}tab=gallery&error=${encodeURIComponent(error.message)}`
+      );
     }
   }
 );
@@ -1506,7 +1541,7 @@ app.post(
       let newPath = normalizeFolderPath(req.body.newPath || "");
 
       if (!oldPath || !newPath) {
-        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=Both+old+and+new+paths+are+required`);
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&tab=gallery&error=Both+old+and+new+paths+are+required`);
       }
 
       const oldExt = path.extname(oldPath || "");
@@ -1516,7 +1551,7 @@ app.post(
       }
 
       if (oldPath === newPath) {
-        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&error=New+path+must+be+different`);
+        return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&tab=gallery&error=New+path+must+be+different`);
       }
 
       const bucket = await ensureCatBucketExists(selectedCat);
@@ -1538,11 +1573,53 @@ app.post(
         throw new Error(updateError.message);
       }
 
-      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&renamed=1`);
+      return res.redirect(`/admin/gallery?catId=${encodeURIComponent(catId)}&tab=gallery&renamed=1`);
     } catch (error) {
       const catId = String(req.body.catId || "").trim();
       const catQuery = catId ? `catId=${encodeURIComponent(catId)}&` : "";
-      return res.redirect(`/admin/gallery?${catQuery}error=${encodeURIComponent(error.message)}`);
+      return res.redirect(
+        `/admin/gallery?${catQuery}tab=gallery&error=${encodeURIComponent(error.message)}`
+      );
+    }
+  }
+);
+
+app.post(
+  "/admin/cat/save",
+  ensureSupabaseForAdmin,
+  requireAdmin,
+  async (req, res) => {
+    const catId = String(req.body.catId || "").trim();
+
+    try {
+      const savedCatId = await saveAdminCatDetails(req.body);
+      return res.redirect(
+        `/admin?catId=${encodeURIComponent(savedCatId)}&tab=details&catSaved=1`
+      );
+    } catch (error) {
+      const cats = await fetchAdminCats().catch(() => []);
+      const selectedCat = await fetchAdminCatById(catId).catch(() => null);
+      const activeTab = "details";
+
+      return res.status(400).render("admin-dashboard", {
+        pageTitle: "Admin",
+        metaDescription: "Manage blog posts.",
+        currentPath: "/admin",
+        saved: false,
+        catSaved: false,
+        newCatRequested: false,
+        selectedCat: selectedCat
+          ? {
+              ...selectedCat,
+              name: String(req.body.name || selectedCat.name || ""),
+              description: String(req.body.description || selectedCat.description || ""),
+            }
+          : null,
+        cats,
+        posts: [],
+        activeTab,
+        error: error.message,
+      });
     }
   }
 );
@@ -1551,6 +1628,7 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
   try {
     const cats = await fetchAdminCats();
     const requestedCatId = String(req.query.catId || "").trim();
+    const requestedTab = String(req.query.tab || "").trim().toLowerCase();
     const selectedCat = requestedCatId
       ? await fetchAdminCatById(requestedCatId)
       : null;
@@ -1559,17 +1637,26 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
       return res.redirect("/admin");
     }
 
-    const adminPosts = selectedCat ? await fetchAdminPosts(selectedCat.id) : [];
+    const activeTab = selectedCat
+      ? (requestedTab === "posts" ? "posts" : "details")
+      : "";
+    const adminPosts =
+      selectedCat && activeTab === "posts"
+        ? await fetchAdminPosts(selectedCat.id)
+        : [];
 
     res.render("admin-dashboard", {
       pageTitle: "Admin",
       metaDescription: "Manage blog posts.",
       currentPath: "/admin",
       saved: req.query.saved === "1",
+      catSaved: req.query.catSaved === "1",
       newCatRequested: req.query.newCat === "1",
       selectedCat,
       cats,
       posts: adminPosts,
+      activeTab,
+      error: "",
     });
   } catch (error) {
     next(error);
