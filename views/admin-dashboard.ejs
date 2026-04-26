@@ -4,49 +4,93 @@
 <main id="main-content" class="main-shell">
   <section class="section-head reveal-up">
     <p class="eyebrow">Admin</p>
-    <h1>Post Manager</h1>
-    <p>Create new posts and edit existing posts and image metadata.</p>
+    <h1><%= selectedCat ? `${selectedCat.name} Post Manager` : "Choose A Cat" %></h1>
+    <p>
+      <%= selectedCat
+        ? "Create new posts and edit existing posts and image metadata for this cat."
+        : "Start by selecting a cat card to manage that cat's posts and images." %>
+    </p>
   </section>
 
   <section class="about-card reveal-up" style="--delay: 70ms">
-    <div class="admin-toolbar">
-      <a class="button-primary" href="/admin/new">New Post</a>
-      <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
-      <form method="post" action="/admin/logout">
-        <button class="button-ghost" type="submit">Logout</button>
-      </form>
-    </div>
+    <% if (selectedCat) { %>
+      <div class="admin-toolbar">
+        <a class="button-ghost" href="/admin">All Cats</a>
+        <a class="button-primary" href="/admin/new?catId=<%= selectedCat.id %>">New Post</a>
+        <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
+        <form method="post" action="/admin/logout">
+          <button class="button-ghost" type="submit">Logout</button>
+        </form>
+      </div>
 
-    <% if (saved) { %>
-      <p class="admin-success" role="status">Post saved successfully.</p>
-    <% } %>
+      <p class="admin-hint admin-selected-cat-copy">
+        <strong><%= selectedCat.name %></strong>: <%= selectedCat.description || "No description yet." %>
+      </p>
 
-    <div class="admin-table-wrap">
-      <table class="admin-table" aria-label="Post list">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Date</th>
-            <th>Mood</th>
-            <th>Slug</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% posts.forEach((post) => { %>
+      <% if (saved) { %>
+        <p class="admin-success" role="status">Post saved successfully.</p>
+      <% } %>
+
+      <div class="admin-table-wrap">
+        <table class="admin-table" aria-label="Post list">
+          <thead>
             <tr>
-              <td><%= post.title %></td>
-              <td><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></td>
-              <td><%= post.mood %></td>
-              <td><code><%= post.slug %></code></td>
-              <td>
-                <a class="read-link" href="/admin/edit/<%= post.id %>">Edit</a>
-              </td>
+              <th>Title</th>
+              <th>Date</th>
+              <th>Mood</th>
+              <th>Slug</th>
+              <th>Actions</th>
             </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            <% if (!posts.length) { %>
+              <tr>
+                <td colspan="5">No posts yet for <%= selectedCat.name %>. Create the first one.</td>
+              </tr>
+            <% } %>
+            <% posts.forEach((post) => { %>
+              <tr>
+                <td><%= post.title %></td>
+                <td><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></td>
+                <td><%= post.mood %></td>
+                <td><code><%= post.slug %></code></td>
+                <td>
+                  <a class="read-link" href="/admin/edit/<%= post.id %>?catId=<%= selectedCat.id %>">Edit</a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="admin-toolbar">
+        <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
+        <form method="post" action="/admin/logout">
+          <button class="button-ghost" type="submit">Logout</button>
+        </form>
+      </div>
+
+      <% if (newCatRequested) { %>
+        <p class="admin-success" role="status">New cat management UI is coming next. Use this card as your placeholder for now.</p>
+      <% } %>
+
+      <section class="admin-cat-grid" aria-label="Cat list">
+        <% cats.forEach((cat) => { %>
+          <article class="admin-cat-card">
+            <h2><%= cat.name %></h2>
+            <p><%= cat.description || "No description yet." %></p>
+            <p class="admin-cat-meta"><%= cat.postCount %> post<%= cat.postCount === 1 ? "" : "s" %></p>
+            <a class="button-primary" href="/admin?catId=<%= cat.id %>">Manage <%= cat.name %></a>
+          </article>
+        <% }) %>
+
+        <article class="admin-cat-card admin-cat-card-new">
+          <h2>New Cat</h2>
+          <p>Add another cat profile and begin managing a new set of posts and images.</p>
+          <a class="button-ghost" href="/admin?newCat=1">Set Up New Cat</a>
+        </article>
+      </section>
+    <% } %>
   </section>
 </main>
 

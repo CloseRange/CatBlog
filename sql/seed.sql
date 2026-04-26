@@ -1,8 +1,25 @@
 begin;
 
-with seed_posts (title, slug, date, mood, body) as (
+with seed_cats (name, slug, description) as (
   values
     (
+      'Java',
+      'java',
+      'A fearless food critic, midnight sprinter, and chaos coordinator with excellent whiskers.'
+    )
+), upserted_cats as (
+  insert into cats (name, slug, description)
+  select name, slug, description
+  from seed_cats
+  on conflict (slug) do update set
+    name = excluded.name,
+    description = excluded.description,
+    updated_at = now()
+  returning id, slug
+), seed_posts (cat_slug, title, slug, date, mood, body) as (
+  values
+    (
+  'java',
   'Why 4 A.M. Zoomies Are Essential Product Strategy',
   'why-4-am-zoomies-are-essential-product-strategy',
   date '2026-03-12',
@@ -14,6 +31,7 @@ This is not chaos. This is agile delivery with no standup and perfect velocity.
 $post$
     ),
     (
+      'java',
       'I Sat On The Keyboard And Accidentally Wrote Poetry',
       'i-sat-on-the-keyboard-and-accidentally-wrote-poetry',
       date '2026-03-16',
@@ -25,6 +43,7 @@ A true artist does not explain the work, then immediately asks for tuna.
 $post$
     ),
     (
+      'java',
       'Window Watch: A Comprehensive Bird Market Analysis',
       'window-watch-a-comprehensive-bird-market-analysis',
       date '2026-03-20',
@@ -36,6 +55,7 @@ I recommend continued investment in chirp-monitoring from the sun patch near the
 $post$
     ),
     (
+      'java',
       'How To Pretend You Are Starving (Even After Lunch)',
       'how-to-pretend-you-are-starving-even-after-lunch',
       date '2026-03-22',
@@ -48,6 +68,7 @@ Works 83% of the time. 100% if guests are present.
 $post$
     ),
     (
+  'java',
   'Why I Keep Trying To Eat Cardboard (A Pica Manifesto)',
   'why-i-keep-trying-to-eat-cardboard-a-pica-manifesto',
   date '2026-03-26',
@@ -59,6 +80,7 @@ I will continue conducting taste audits on paper products for the sake of scienc
 $post$
     ),
     (
+  'java',
   'Fabrics and Fears: My Humans Are Overreacting!',
   'fabrics-and-fears-my-humans-are-overreacting',
   date '2026-04-11',
@@ -72,6 +94,7 @@ Honestly, they need to chill. They don't realize that I'm just trying to save th
 $post$
     ),
     (
+  'java',
   'My Last Adventure',
   'my-last-adventure',
   date '2026-04-14',
@@ -85,6 +108,7 @@ When we got home, there were tears and hugs. My humans were sad, and I felt thei
 $post$
     ),
     (
+  'java',
   'Plant Takedown: A Cat''s Quest for the Perfect View',
   'plant-takedown-a-cats-quest-for-the-perfect-view',
   date '2026-04-13',
@@ -98,6 +122,7 @@ She was not a fan of my little botanical breakdown. There was mumbling and a lot
 $post$
     ),
     (
+  'java',
   'Java''s Snack Attack: The Heist of the Missing Socks',
   'javas-snack-attack-the-case-of-the-missing-socks',
   date '2026-04-11',
@@ -111,10 +136,12 @@ Now, my human has taken measures to safeguard against future sock attacks, but I
 $post$
     )
 ), upserted_posts as (
-  insert into posts (title, slug, date, mood, body)
-  select title, slug, date, mood, body
-  from seed_posts
+  insert into posts (cat_id, title, slug, date, mood, body)
+  select c.id, p.title, p.slug, p.date, p.mood, p.body
+  from seed_posts p
+  join upserted_cats c on c.slug = p.cat_slug
   on conflict (slug) do update set
+    cat_id = excluded.cat_id,
     title = excluded.title,
     date = excluded.date,
     mood = excluded.mood,

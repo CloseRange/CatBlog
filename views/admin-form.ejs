@@ -5,12 +5,12 @@
   <section class="section-head reveal-up">
     <p class="eyebrow">Admin</p>
     <h1><%= mode === "edit" ? "Edit Post" : "Create Post" %></h1>
-    <p>Manage content and image entries from Supabase.</p>
+    <p>Manage content and image entries from Supabase for <strong><%= selectedCat ? selectedCat.name : "this cat" %></strong>.</p>
   </section>
 
   <section class="about-card reveal-up" style="--delay: 70ms">
     <div class="admin-toolbar">
-      <a class="button-ghost" href="/admin">Back To Admin</a>
+      <a class="button-ghost" href="/admin?catId=<%= catId || (selectedCat && selectedCat.id) || "" %>">Back To <%= selectedCat ? selectedCat.name : "Admin" %></a>
       <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
       <a class="button-ghost" href="/">View Site</a>
     </div>
@@ -29,6 +29,7 @@
       <h2 class="admin-gallery-title">Generate With AI</h2>
       <p class="admin-hint">Describe what the post should be about, then generate a draft.</p>
 
+      <input type="hidden" name="catId" value="<%= formData.catId || catId || (selectedCat && selectedCat.id) || "" %>" />
       <input type="hidden" name="postId" value="<%= formData.postId %>" />
       <input type="hidden" name="title" value="<%= formData.title %>" />
       <input type="hidden" name="slug" value="<%= formData.slug %>" />
@@ -48,6 +49,7 @@
     </form>
 
     <form class="admin-form-grid" method="post" action="/admin/save">
+      <input type="hidden" name="catId" value="<%= formData.catId || catId || (selectedCat && selectedCat.id) || "" %>" />
       <input type="hidden" name="postId" value="<%= formData.postId %>" />
 
       <label for="title">Title</label>

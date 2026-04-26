@@ -578,11 +578,76 @@ function serializeImagesInput(images) {
   return JSON.stringify(value, null, 2);
 }
 
-async function fetchAdminPosts() {
+async function fetchAdminCats() {
   const { data, error } = await supabase
+    .from("cats")
+    .select("id, name, slug, description, created_at")
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const cats = data || [];
+  if (!cats.length) {
+    return [];
+  }
+
+  const { data: postCounts, error: countError } = await supabase
     .from("posts")
-    .select("id, title, slug, mood, date, updated_at")
+    .select("cat_id")
+    .not("cat_id", "is", null);
+
+  if (countError) {
+    throw new Error(countError.message);
+  }
+
+  const countsByCatId = (postCounts || []).reduce((acc, row) => {
+    const key = String(row.cat_id || "");
+    if (!key) {
+      return acc;
+    }
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  return cats.map((cat) => ({
+    ...cat,
+    postCount: countsByCatId[cat.id] || 0,
+  }));
+}
+
+async function fetchAdminCatById(catId) {
+  const normalizedId = String(catId || "").trim();
+  if (!normalizedId) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("cats")
+    .select("id, name, slug, description")
+    .eq("id", normalizedId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data || null;
+}
+
+async function fetchAdminPosts(catId) {
+  const normalizedCatId = String(catId || "").trim();
+  let query = supabase
+    .from("posts")
+    .select("id, title, slug, mood, date, updated_at, cat_id")
     .order("date", { ascending: false });
+
+  if (normalizedCatId) {
+    query = query.eq("cat_id", normalizedCatId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(error.message);
@@ -595,7 +660,7 @@ async function fetchAdminPostById(postId) {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, title, slug, date, mood, body, post_images(id, storage_path, alt, caption, sort_order, is_cover)"
+      "id, title, slug, date, mood, body, cat_id, post_images(id, storage_path, alt, caption, sort_order, is_cover)"
     )
     .eq("id", postId)
     .single();
@@ -614,8 +679,9 @@ async function saveAdminPost(formData) {
   const date = String(formData.date || "").trim();
   const slug = String(formData.slug || "").trim() || createSlug(title);
   const postId = String(formData.postId || "").trim();
+  const catId = String(formData.catId || "").trim();
 
-  if (!title || !mood || !body || !date) {
+  if (!title || !mood || !body || !date || !catId) {
     throw new Error("Title, mood, date, and body are required.");
   }
 
@@ -627,7 +693,7 @@ async function saveAdminPost(formData) {
   if (savedPostId) {
     const { data, error } = await supabase
       .from("posts")
-      .update({ title, slug, mood, date, body })
+      .update({ title, slug, mood, date, body, cat_id: catId })
       .eq("id", savedPostId)
       .select("id")
       .single();
@@ -640,7 +706,7 @@ async function saveAdminPost(formData) {
   } else {
     const { data, error } = await supabase
       .from("posts")
-      .insert({ title, slug, mood, date, body })
+      .insert({ title, slug, mood, date, body, cat_id: catId })
       .select("id")
       .single();
 
@@ -928,6 +994,13 @@ app.post(
   requireAdmin,
   async (req, res) => {
     const mode = req.body.postId ? "edit" : "create";
+    const catId = String(req.body.catId || "").trim();
+    const selectedCat = await fetchAdminCatById(catId);
+
+    if (!selectedCat) {
+      return res.redirect("/admin");
+    }
+
     const aiPrompt = String(req.body.aiPrompt || "").trim();
     const selectedPath = String(req.body.selectedPath || "");
     const galleryImages = await listBucketImages().catch(() => []);
@@ -951,6 +1024,8 @@ app.post(
         currentPath: "/admin",
         error: "OpenAI is not configured. Add OPENAI_API_KEY in .env.",
         mode,
+        selectedCat,
+        catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
         selectedPath,
@@ -958,6 +1033,7 @@ app.post(
         aiPrompt,
         aiGenerated: false,
         formData: {
+          catId: selectedCat.id,
           postId: String(req.body.postId || ""),
           title: String(req.body.title || ""),
           slug: String(req.body.slug || ""),
@@ -979,6 +1055,8 @@ app.post(
         currentPath: "/admin",
         error: "Add a prompt for AI generation.",
         mode,
+        selectedCat,
+        catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
         selectedPath,
@@ -986,6 +1064,7 @@ app.post(
         aiPrompt,
         aiGenerated: false,
         formData: {
+          catId: selectedCat.id,
           postId: String(req.body.postId || ""),
           title: String(req.body.title || ""),
           slug: String(req.body.slug || ""),
@@ -1009,6 +1088,8 @@ app.post(
         currentPath: "/admin",
         error: "",
         mode,
+        selectedCat,
+        catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
         selectedPath,
@@ -1016,6 +1097,7 @@ app.post(
         aiPrompt,
         aiGenerated: true,
         formData: {
+          catId: selectedCat.id,
           postId: String(req.body.postId || ""),
           title: draft.title || String(req.body.title || ""),
           slug: String(req.body.slug || ""),
@@ -1037,6 +1119,8 @@ app.post(
         currentPath: "/admin",
         error: `AI generation failed: ${error.message}`,
         mode,
+        selectedCat,
+        catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
         selectedPath,
@@ -1044,6 +1128,7 @@ app.post(
         aiPrompt,
         aiGenerated: false,
         formData: {
+          catId: selectedCat.id,
           postId: String(req.body.postId || ""),
           title: String(req.body.title || ""),
           slug: String(req.body.slug || ""),
@@ -1291,13 +1376,26 @@ app.post(
 
 app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) => {
   try {
-    const adminPosts = await fetchAdminPosts();
+    const cats = await fetchAdminCats();
+    const requestedCatId = String(req.query.catId || "").trim();
+    const selectedCat = requestedCatId
+      ? await fetchAdminCatById(requestedCatId)
+      : null;
+
+    if (requestedCatId && !selectedCat) {
+      return res.redirect("/admin");
+    }
+
+    const adminPosts = selectedCat ? await fetchAdminPosts(selectedCat.id) : [];
 
     res.render("admin-dashboard", {
       pageTitle: "Admin",
       metaDescription: "Manage blog posts.",
       currentPath: "/admin",
       saved: req.query.saved === "1",
+      newCatRequested: req.query.newCat === "1",
+      selectedCat,
+      cats,
       posts: adminPosts,
     });
   } catch (error) {
@@ -1311,6 +1409,11 @@ app.get(
   requireAdmin,
   async (req, res, next) => {
     try {
+      const selectedCat = await fetchAdminCatById(req.query.catId);
+      if (!selectedCat) {
+        return res.redirect("/admin");
+      }
+
       const galleryImages = await listBucketImages();
 
       res.render("admin-form", {
@@ -1319,6 +1422,8 @@ app.get(
         currentPath: "/admin",
         error: "",
         mode: "create",
+        selectedCat,
+        catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath: {},
         selectedPath: "",
@@ -1326,6 +1431,7 @@ app.get(
         aiPrompt: "",
         aiGenerated: false,
         formData: {
+          catId: selectedCat.id,
           postId: "",
           title: "",
           slug: "",
@@ -1351,6 +1457,11 @@ app.get(
   async (req, res, next) => {
     try {
       const post = await fetchAdminPostById(req.params.id);
+      const selectedCat = await fetchAdminCatById(post.cat_id);
+      if (!selectedCat) {
+        return res.redirect("/admin");
+      }
+
       const galleryImages = await listBucketImages();
       const selectedImagesByPath = (post.post_images || []).reduce((acc, image) => {
         acc[image.storage_path] = {
@@ -1372,6 +1483,8 @@ app.get(
         currentPath: "/admin",
         error: "",
         mode: "edit",
+        selectedCat,
+        catId: selectedCat.id,
         galleryImages,
         selectedImagesByPath,
         selectedPath,
@@ -1379,6 +1492,7 @@ app.get(
         aiPrompt: "",
         aiGenerated: false,
         formData: {
+          catId: selectedCat.id,
           postId: post.id,
           title: post.title,
           slug: post.slug,
@@ -1402,10 +1516,15 @@ app.post(
   ensureSupabaseForAdmin,
   requireAdmin,
   async (req, res) => {
+    const catId = String(req.body.catId || "").trim();
+
     try {
       const savedPostId = await saveAdminPost(req.body);
-      return res.redirect(`/admin/edit/${savedPostId}?saved=1`);
+      return res.redirect(
+        `/admin/edit/${savedPostId}?saved=1&catId=${encodeURIComponent(catId)}`
+      );
     } catch (error) {
+      const selectedCat = await fetchAdminCatById(catId);
       const galleryImages = await listBucketImages().catch(() => []);
       const selectedImagesByPath = parseSingleGallerySelection(
         req.body.selectedPath
@@ -1425,6 +1544,8 @@ app.post(
         currentPath: "/admin",
         error: error.message,
         mode: req.body.postId ? "edit" : "create",
+        selectedCat,
+        catId,
         galleryImages,
         selectedImagesByPath,
         selectedPath: String(req.body.selectedPath || ""),
@@ -1432,6 +1553,7 @@ app.post(
         aiPrompt: String(req.body.aiPrompt || ""),
         aiGenerated: false,
         formData: {
+          catId,
           postId: String(req.body.postId || ""),
           title: String(req.body.title || ""),
           slug: String(req.body.slug || ""),

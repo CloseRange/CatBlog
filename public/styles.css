@@ -601,6 +601,50 @@ button:focus-visible {
   overflow-x: auto;
 }
 
+.admin-selected-cat-copy {
+  margin-bottom: 0.9rem;
+}
+
+.admin-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-cat-card {
+  border: 1px solid rgba(31, 31, 31, 0.14);
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.95), rgba(248, 246, 239, 0.95));
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-cat-card h2 {
+  margin: 0;
+  font-family: "Outfit", "DM Sans", sans-serif;
+  color: var(--accent-2);
+}
+
+.admin-cat-card p {
+  margin: 0;
+}
+
+.admin-cat-card .button-primary,
+.admin-cat-card .button-ghost {
+  width: fit-content;
+}
+
+.admin-cat-meta {
+  font-size: 0.82rem;
+  color: #5b5b5b;
+}
+
+.admin-cat-card-new {
+  border-style: dashed;
+  background: linear-gradient(165deg, rgba(255, 251, 233, 0.95), rgba(255, 245, 208, 0.75));
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
