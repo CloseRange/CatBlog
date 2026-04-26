@@ -1,6 +1,6 @@
 begin;
 
-with seed_cats (name, slug, tag, title, backstory, description) as (
+with seed_cats (name, slug, tag, title, backstory, description, about) as (
   values
     (
       'Java',
@@ -8,11 +8,12 @@ with seed_cats (name, slug, tag, title, backstory, description) as (
       'Memorial Archive',
       'The world''s most overqualified cat',
       'Java was a real cat whose chaos, charm, and daily antics inspired this memorial archive.',
-      'A fearless food critic, midnight sprinter, and chaos coordinator with excellent whiskers.'
+      'A fearless food critic, midnight sprinter, and chaos coordinator with excellent whiskers.',
+      'Java was my real cat, and this page is where we keep her bigger story: the routines, chaos, health battles, and love that shaped her life with us.'
     )
 ), upserted_cats as (
-  insert into cats (name, slug, tag, title, backstory, description)
-  select name, slug, tag, title, backstory, description
+  insert into cats (name, slug, tag, title, backstory, description, about)
+  select name, slug, tag, title, backstory, description, about
   from seed_cats
   on conflict (slug) do update set
     name = excluded.name,
@@ -20,6 +21,7 @@ with seed_cats (name, slug, tag, title, backstory, description) as (
     title = excluded.title,
     backstory = excluded.backstory,
     description = excluded.description,
+    about = excluded.about,
     updated_at = now()
   returning id, slug
 ), seed_posts (cat_slug, title, slug, date, mood, body) as (

@@ -1076,6 +1076,102 @@ button:focus-visible {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+/* AI field buttons */
+.ai-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ai-label-row label {
+  font-weight: 700;
+}
+
+.ai-field-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #999;
+  opacity: 0.65;
+  transition: opacity 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.ai-field-btn:hover {
+  opacity: 1;
+  color: var(--accent-2, #7c6fcd);
+}
+
+.ai-field-btn img {
+  display: block;
+  pointer-events: none;
+}
+
+/* AI field popup */
+.ai-field-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ai-field-overlay[hidden] {
+  display: none;
+}
+
+.ai-field-popup {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ai-field-popup-title {
+  margin: 0;
+  font-family: "Outfit", "DM Sans", sans-serif;
+  font-size: 1.1rem;
+}
+
+.ai-field-popup-hint {
+  margin: 0;
+  color: #555;
+  font-size: 0.84rem;
+}
+
+.ai-field-popup-textarea {
+  width: 100%;
+  border: 1px solid rgba(31, 31, 31, 0.18);
+  border-radius: 10px;
+  font: inherit;
+  padding: 0.6rem 0.7rem;
+  resize: vertical;
+  background: #fff;
+}
+
+.ai-field-popup-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ai-field-popup-error {
+  margin: 0;
+}
+
 @media (max-width: 700px) {
   .hero-layout-has-image {
     grid-template-columns: 1fr;

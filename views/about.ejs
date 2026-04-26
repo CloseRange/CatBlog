@@ -8,23 +8,34 @@
     <% if (siteCat && siteCat.profileImage && siteCat.profileImage.src) { %>
       <img class="about-profile-image" src="<%= siteCat.profileImage.src %>" alt="<%= siteCat.profileImage.alt %>" loading="lazy" />
     <% } %>
-    <p>
-      <%= siteCat && siteCat.title
-        ? `${siteCat.name} was ${siteCat.title.toLowerCase()}, with strong opinions about snacks, naps, and chewing absolutely everything in sight.`
-        : 'Java was my real cat, with strong opinions about snacks, naps, and chewing absolutely everything in sight.' %>
-    </p>
-    <p>
-      He had pica, so many entries are about the eternal struggle to keep socks,
-      cardboard, and charging cables out of reach.
-    </p>
-    <p>
-      <%= siteCat && siteCat.description
-        ? `${siteCat.description} Posts and images are managed in Supabase, so updates are easy while keeping the archive focused.`
-        : 'This memorial site preserves her memory through posts and images managed in Supabase, so updates are easy while keeping the archive focused.' %>
-    </p>
-    <p>
-      Every page under <code>/java</code> is dedicated to <%= siteCat ? siteCat.name : 'Java' %>'s archive.
-    </p>
+    <% const aboutContent = (siteCat && siteCat.about) || ''; %>
+    <% const aboutParagraphs = aboutContent
+      ? aboutContent.split(/\n\s*\n/).map((chunk) => chunk.trim()).filter(Boolean)
+      : []; %>
+
+    <% if (aboutParagraphs.length) { %>
+      <% aboutParagraphs.forEach((paragraph) => { %>
+        <p><%= paragraph %></p>
+      <% }) %>
+    <% } else { %>
+      <p>
+        <%= siteCat && siteCat.title
+          ? `${siteCat.name} was ${siteCat.title.toLowerCase()}, with strong opinions about snacks, naps, and chewing absolutely everything in sight.`
+          : 'Java was my real cat, with strong opinions about snacks, naps, and chewing absolutely everything in sight.' %>
+      </p>
+      <p>
+        He had pica, so many entries are about the eternal struggle to keep socks,
+        cardboard, and charging cables out of reach.
+      </p>
+      <p>
+        <%= siteCat && siteCat.description
+          ? `${siteCat.description} Posts and images are managed in Supabase, so updates are easy while keeping the archive focused.`
+          : 'This memorial site preserves her memory through posts and images managed in Supabase, so updates are easy while keeping the archive focused.' %>
+      </p>
+      <p>
+        Every page under <code>/java</code> is dedicated to <%= siteCat ? siteCat.name : 'Java' %>'s archive.
+      </p>
+    <% } %>
 
     <div class="about-highlights">
       <article>

@@ -34,6 +34,10 @@
           <br />
         <% } %>
         <%= selectedCat.description || "No description yet." %>
+        <% if (selectedCat.about) { %>
+          <br />
+          <span>About page copy is set.</span>
+        <% } %>
       </p>
 
       <% if (saved && activeTab === "posts") { %>
@@ -53,7 +57,12 @@
           <label for="catName">Name</label>
           <input id="catName" name="name" type="text" value="<%= selectedCat.name %>" required />
 
-          <label for="catTitle">Title</label>
+          <div class="ai-label-row">
+            <label for="catTitle">Title</label>
+            <% if (locals.aiEnabled) { %>
+              <button type="button" class="ai-field-btn" data-field="title" data-target="catTitle" aria-label="AI fill Title"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+            <% } %>
+          </div>
           <input
             id="catTitle"
             name="title"
@@ -63,7 +72,12 @@
             required
           />
 
-          <label for="catTag">Tag</label>
+          <div class="ai-label-row">
+            <label for="catTag">Tag</label>
+            <% if (locals.aiEnabled) { %>
+              <button type="button" class="ai-field-btn" data-field="tag" data-target="catTag" aria-label="AI fill Tag"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+            <% } %>
+          </div>
           <input
             id="catTag"
             name="tag"
@@ -76,11 +90,35 @@
           <input id="catSlug" type="text" value="<%= selectedCat.slug %>" readonly />
           <p class="admin-hint">Slug stays stable because it maps to this cat's routes and bucket.</p>
 
-          <label for="catBackstory">Backstory</label>
+          <div class="ai-label-row">
+            <label for="catBackstory">Backstory</label>
+            <% if (locals.aiEnabled) { %>
+              <button type="button" class="ai-field-btn" data-field="backstory" data-target="catBackstory" aria-label="AI fill Backstory"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+            <% } %>
+          </div>
           <textarea id="catBackstory" name="backstory" rows="4" required><%= selectedCat.backstory || "" %></textarea>
 
-          <label for="catDescription">Description</label>
+          <div class="ai-label-row">
+            <label for="catDescription">Description</label>
+            <% if (locals.aiEnabled) { %>
+              <button type="button" class="ai-field-btn" data-field="description" data-target="catDescription" data-supports-posts="true" aria-label="AI fill Description"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+            <% } %>
+          </div>
           <textarea id="catDescription" name="description" rows="5" required><%= selectedCat.description || "" %></textarea>
+
+          <div class="ai-label-row">
+            <label for="catAbout">About Page Content</label>
+            <% if (locals.aiEnabled) { %>
+              <button type="button" class="ai-field-btn" data-field="about" data-target="catAbout" data-supports-posts="true" aria-label="AI fill About Page Content"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+            <% } %>
+          </div>
+          <textarea
+            id="catAbout"
+            name="about"
+            rows="10"
+            placeholder="Write the longer about-page story for this cat."
+          ><%= selectedCat.about || "" %></textarea>
+          <p class="admin-hint">This longer text is shown on <code>/<%= selectedCat.slug %>/about</code>.</p>
 
           <h2 class="admin-gallery-title">Select Profile Photo</h2>
           <p class="admin-hint">Choose an image from this cat's gallery to use on cat cards and profile sections.</p>
@@ -130,6 +168,22 @@
 
           <button class="button-primary" type="submit">Save Details</button>
         </form>
+
+        <% if (locals.aiEnabled) { %>
+        <div class="ai-field-overlay" id="aiFieldOverlay" hidden>
+          <div class="ai-field-popup" role="dialog" aria-modal="true" aria-labelledby="aiFieldPopupTitle">
+            <h3 class="ai-field-popup-title" id="aiFieldPopupTitle">Fill with AI</h3>
+            <p class="ai-field-popup-hint">Describe what you want. If there&rsquo;s already content in the field you can reference it (e.g. &ldquo;make this more funny&rdquo;).</p>
+            <textarea id="aiFieldPopupPrompt" class="ai-field-popup-textarea" rows="4" placeholder="Describe what you want..."></textarea>
+            <p class="admin-error ai-field-popup-error" id="aiFieldPopupError" hidden></p>
+            <div class="ai-field-popup-actions">
+              <button type="button" class="button-primary" id="aiFieldPopupSubmit">Generate</button>
+              <button type="button" class="button-ghost" id="aiFieldPopupFromPosts" hidden>Generate from All Posts</button>
+              <button type="button" class="button-ghost" id="aiFieldPopupCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <% } %>
       <% } %>
 
       <% if (activeTab === "posts") { %>
@@ -202,3 +256,100 @@
 </main>
 
 <%- include("partials/footer") %>
+
+<% if (locals.aiEnabled && selectedCat && activeTab === 'details') { %>
+<script>
+(function () {
+  var overlay = document.getElementById("aiFieldOverlay");
+  if (!overlay) return;
+
+  var promptInput = document.getElementById("aiFieldPopupPrompt");
+  var submitBtn = document.getElementById("aiFieldPopupSubmit");
+  var fromPostsBtn = document.getElementById("aiFieldPopupFromPosts");
+  var cancelBtn = document.getElementById("aiFieldPopupCancel");
+  var errorEl = document.getElementById("aiFieldPopupError");
+
+  var currentField = null;
+  var currentTarget = null;
+  var currentCatId = null;
+
+  function getCatId() {
+    var input = document.querySelector('input[name="catId"]');
+    return input ? input.value : "";
+  }
+
+  function openPopup(field, targetId, supportsPosts) {
+    currentField = field;
+    currentTarget = targetId;
+    currentCatId = getCatId();
+    promptInput.value = "";
+    errorEl.hidden = true;
+    errorEl.textContent = "";
+    fromPostsBtn.hidden = !supportsPosts;
+    overlay.hidden = false;
+    promptInput.focus();
+  }
+
+  function closePopup() {
+    overlay.hidden = true;
+    currentField = null;
+    currentTarget = null;
+  }
+
+  function setLoading(loading) {
+    submitBtn.disabled = loading;
+    fromPostsBtn.disabled = loading;
+    cancelBtn.disabled = loading;
+    submitBtn.textContent = loading ? "Generating\u2026" : "Generate";
+  }
+
+  async function generate(usePostsContext) {
+    var prompt = promptInput.value.trim();
+    if (!usePostsContext && !prompt) {
+      errorEl.textContent = "Please enter a prompt.";
+      errorEl.hidden = false;
+      return;
+    }
+    var targetEl = document.getElementById(currentTarget);
+    var currentValue = targetEl ? targetEl.value : "";
+    errorEl.hidden = true;
+    setLoading(true);
+    try {
+      var resp = await fetch("/admin/cat/ai-field", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          catId: currentCatId,
+          field: currentField,
+          prompt: prompt,
+          currentValue: currentValue,
+          usePostsContext: usePostsContext,
+        }),
+      });
+      var data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "Generation failed.");
+      if (targetEl) targetEl.value = data.result;
+      closePopup();
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.hidden = false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  document.querySelectorAll(".ai-field-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openPopup(btn.dataset.field, btn.dataset.target, btn.dataset.supportsPosts === "true");
+    });
+  });
+
+  submitBtn.addEventListener("click", function () { generate(false); });
+  fromPostsBtn.addEventListener("click", function () { generate(true); });
+  cancelBtn.addEventListener("click", closePopup);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closePopup(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) closePopup(); });
+}());
+</script>
+<% } %>

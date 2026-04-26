@@ -25,6 +25,7 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const OPENAI_PROJECT_ID = String(process.env.OPENAI_PROJECT_ID || "").trim();
 const OPENAI_ORG_ID = String(process.env.OPENAI_ORG_ID || "").trim();
 const AI_ENABLED = Boolean(OPENAI_API_KEY);
+const ALLOWED_AI_FIELDS = ["title", "tag", "backstory", "description", "about"];
 const DEFAULT_CAT_PROFILES = [
   {
     id: "java",
@@ -36,6 +37,8 @@ const DEFAULT_CAT_PROFILES = [
       "Java was a real cat whose chaos, charm, and daily antics inspired this memorial archive.",
     description:
       "A memorial archive of Java's stories and photos, preserved with love.",
+    about:
+      "Java was my real cat, and this archive exists to remember her personality, routines, and the love she gave us every day.",
     profile_image_storage_bucket: "",
     profile_image_storage_path: "",
   },
@@ -44,6 +47,7 @@ const DEFAULT_CAT_PROFILES = [
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "dev-session-secret-change-me",
@@ -104,6 +108,7 @@ function normalizeCatRecord(cat) {
   const title = String(cat && cat.title ? cat.title : "").trim();
   const backstory = String(cat && cat.backstory ? cat.backstory : "").trim();
   const description = String(cat && cat.description ? cat.description : "").trim();
+  const about = String(cat && cat.about ? cat.about : "").trim();
   const profileImageStoragePath = normalizeFolderPath(
     (cat &&
       (cat.profile_image_storage_path ||
@@ -132,6 +137,7 @@ function normalizeCatRecord(cat) {
     title: title || `${name}'s Logbook`,
     backstory,
     description,
+    about,
     profileImageStorageBucket,
     profileImageStoragePath,
     profileImage: profileImageStoragePath
@@ -153,7 +159,7 @@ async function loadCatProfiles() {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
+      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path, created_at"
     )
     .order("name", { ascending: true });
 
@@ -178,7 +184,7 @@ async function fetchCatProfileBySlug(catSlug) {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
+      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path"
     )
     .eq("slug", normalizedSlug)
     .maybeSingle();
@@ -413,6 +419,107 @@ async function generatePostDraftFromPrompt(prompt) {
     mood: String(parsed.mood || "").trim(),
     body: String(parsed.body || "").trim(),
   };
+}
+
+async function generateCatField({ field, prompt, currentValue, catId, usePostsContext }) {
+  if (!AI_ENABLED) {
+    throw new Error("OpenAI is not configured. Add OPENAI_API_KEY in .env.");
+  }
+
+  if (!ALLOWED_AI_FIELDS.includes(field)) {
+    throw new Error(`Field "${field}" is not supported for AI generation.`);
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${OPENAI_API_KEY}`,
+  };
+  if (/^proj_[a-zA-Z0-9_-]+$/.test(OPENAI_PROJECT_ID)) {
+    headers["OpenAI-Project"] = OPENAI_PROJECT_ID;
+  }
+  if (/^org_[a-zA-Z0-9_-]+$/.test(OPENAI_ORG_ID)) {
+    headers["OpenAI-Organization"] = OPENAI_ORG_ID;
+  }
+
+  const fieldDescriptions = {
+    title: "a short catchy tagline/title for the cat's logbook (like \"The world's most overqualified cat\")",
+    tag: "a short tag/label for the cat's profile (like \"Memorial Archive\")",
+    backstory: "a short 1-2 sentence backstory about this cat",
+    description: "a 1-2 sentence description of the cat's blog shown on listing cards",
+    about: "the longer about-page story for this cat's logbook (several paragraphs)",
+  };
+
+  let systemContent;
+  let userContent;
+
+  if (usePostsContext) {
+    const cat = await fetchAdminCatById(catId);
+    if (!cat) throw new Error("Cat not found.");
+
+    const { data: postsData, error: postsError } = await supabase
+      .from("posts")
+      .select("title, date, body")
+      .eq("cat_id", catId)
+      .order("date", { ascending: false });
+
+    if (postsError) throw new Error(postsError.message);
+    const posts = postsData || [];
+
+    const postsSummary = posts.length
+      ? posts.map((p) => `Title: "${p.title}" (${p.date})\n${p.body || ""}`).join("\n\n---\n\n")
+      : "No posts yet.";
+
+    systemContent = `You write content for a cat blog. Given the cat's backstory and their blog posts, generate ${fieldDescriptions[field]}. Keep the tone warm, playful, and personal. Return only the text content with no extra commentary.`;
+    userContent = `Cat name: ${cat.name}\nBackstory: ${cat.backstory || "Not set."}\n\nBlog posts:\n${postsSummary}\n\nGenerate ${fieldDescriptions[field]}.`;
+  } else {
+    systemContent = `You write content for a cat blog. Generate ${fieldDescriptions[field]}. Keep the tone warm, playful, and personal. Return only the text content with no extra commentary.`;
+    if (currentValue) {
+      userContent = `Current value:\n"${currentValue}"\n\nInstruction: ${prompt}`;
+    } else {
+      userContent = prompt;
+    }
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      temperature: 0.8,
+      messages: [
+        { role: "system", content: systemContent },
+        { role: "user", content: userContent },
+      ],
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    const apiMessage =
+      (payload && payload.error && payload.error.message) || "OpenAI request failed.";
+    const errorCode = payload && payload.error && payload.error.code;
+    const errorType = payload && payload.error && payload.error.type;
+    if (
+      response.status === 429 ||
+      errorCode === "insufficient_quota" ||
+      errorType === "insufficient_quota"
+    ) {
+      throw new Error(
+        "OpenAI quota error. Verify billing is active for the same account as this API key."
+      );
+    }
+    throw new Error(apiMessage);
+  }
+
+  const content =
+    payload &&
+    payload.choices &&
+    payload.choices[0] &&
+    payload.choices[0].message &&
+    payload.choices[0].message.content;
+
+  if (!content) throw new Error("OpenAI returned an empty response.");
+  return String(content).trim();
 }
 
 function ensureSupabaseForAdmin(req, res, next) {
@@ -783,7 +890,7 @@ async function fetchAdminCats() {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path, created_at"
+      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path, created_at"
     )
     .order("name", { ascending: true });
 
@@ -829,7 +936,7 @@ async function fetchAdminCatById(catId) {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, profile_image_storage_bucket, profile_image_storage_path"
+      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path"
     )
     .eq("id", normalizedId)
     .maybeSingle();
@@ -848,6 +955,7 @@ async function saveAdminCatDetails(formData) {
   const title = String(formData.title || "").trim();
   const backstory = String(formData.backstory || "").trim();
   const description = String(formData.description || "").trim();
+  const about = String(formData.about || "").trim();
   const hasProfileImageSelection = Object.prototype.hasOwnProperty.call(
     formData,
     "profileImagePath"
@@ -894,6 +1002,7 @@ async function saveAdminCatDetails(formData) {
       title,
       backstory,
       description,
+      about,
       profile_image_storage_bucket: profileImageStorageBucket,
       profile_image_storage_path: profileImageStoragePath,
     })
@@ -1148,7 +1257,9 @@ app.get("/java/about", async (req, res, next) => {
     res.render("about", {
       pageTitle: `About ${(siteCat && siteCat.name) || "Java"}`,
       metaDescription:
-        (siteCat && siteCat.description) || "About Java and the memorial archive.",
+        (siteCat && siteCat.about) ||
+        (siteCat && siteCat.description) ||
+        "About Java and the memorial archive.",
       currentPath: "/about",
       siteCat,
       siteName: siteLabel,
@@ -1758,6 +1869,39 @@ app.post(
 );
 
 app.post(
+  "/admin/cat/ai-field",
+  ensureSupabaseForAdmin,
+  requireAdmin,
+  async (req, res) => {
+    const field = String(req.body.field || "").trim();
+    const catId = String(req.body.catId || "").trim();
+    const prompt = String(req.body.prompt || "").trim();
+    const currentValue = String(req.body.currentValue || "").trim();
+    const usePostsContext = Boolean(req.body.usePostsContext);
+
+    if (!AI_ENABLED) {
+      return res.status(400).json({ error: "AI is not configured. Add OPENAI_API_KEY in .env." });
+    }
+    if (!ALLOWED_AI_FIELDS.includes(field)) {
+      return res.status(400).json({ error: `Field "${field}" is not supported.` });
+    }
+    if (!catId) {
+      return res.status(400).json({ error: "catId is required." });
+    }
+    if (!usePostsContext && !prompt) {
+      return res.status(400).json({ error: "A prompt is required." });
+    }
+
+    try {
+      const result = await generateCatField({ field, prompt, currentValue, catId, usePostsContext });
+      return res.json({ result });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+app.post(
   "/admin/cat/save",
   ensureSupabaseForAdmin,
   requireAdmin,
@@ -1797,6 +1941,7 @@ app.post(
               title: String(req.body.title || selectedCat.title || ""),
               backstory: String(req.body.backstory || selectedCat.backstory || ""),
               description: String(req.body.description || selectedCat.description || ""),
+              about: String(req.body.about || selectedCat.about || ""),
               profile_image_storage_bucket:
                 (submittedProfilePath && selectedBucket) ||
                 selectedCat.profileImageStorageBucket ||
@@ -1810,6 +1955,7 @@ app.post(
         posts: [],
         activeTab,
         error: error.message,
+        aiEnabled: AI_ENABLED,
       });
     }
   }
@@ -1857,6 +2003,7 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
       posts: adminPosts,
       activeTab,
       error: "",
+      aiEnabled: AI_ENABLED,
     });
   } catch (error) {
     next(error);

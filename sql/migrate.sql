@@ -10,6 +10,7 @@ create table if not exists cats (
   title text not null default '',
   backstory text not null default '',
   description text not null default '',
+  about text not null default '',
   profile_image_storage_bucket text,
   profile_image_storage_path text,
   created_at timestamptz not null default now(),
@@ -26,28 +27,25 @@ alter table cats
 add column if not exists backstory text not null default '';
 
 alter table cats
+add column if not exists about text not null default '';
+
+alter table cats
 add column if not exists profile_image_storage_bucket text;
 
 alter table cats
 add column if not exists profile_image_storage_path text;
 
-insert into cats (name, slug, tag, title, backstory, description)
+insert into cats (name, slug, tag, title, backstory, description, about)
 values (
   'Java',
   'java',
   'Memorial Archive',
   'The world''s most overqualified cat',
   'Java was a real cat whose chaos, charm, and daily antics inspired this memorial archive.',
-  'A brave and chaotic storyteller who turned every day into an adventure log.'
+  'A brave and chaotic storyteller who turned every day into an adventure log.',
+  'Java was my real cat, and this memorial archive exists so her personality, stories, and daily chaos are never forgotten.'
 )
-on conflict (slug) do update
-set
-  name = excluded.name,
-  tag = excluded.tag,
-  title = excluded.title,
-  backstory = excluded.backstory,
-  description = excluded.description,
-  updated_at = now();
+on conflict (slug) do nothing;
 
 create table if not exists posts (
   id uuid primary key default gen_random_uuid(),
@@ -110,8 +108,7 @@ add column if not exists storage_bucket text;
 update post_images pi
 set storage_bucket = 'catblog-images'
 where pi.storage_bucket is null
-  or btrim(pi.storage_bucket) = ''
-  or pi.storage_bucket <> 'catblog-images';
+  or btrim(pi.storage_bucket) = '';
 
 alter table post_images
 alter column storage_bucket set not null;
