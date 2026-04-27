@@ -20,6 +20,11 @@
       <a href="<%= homeHref %>" class="<%= activePath === '/' ? 'is-active' : '' %>" aria-current="<%= activePath === '/' ? 'page' : 'false' %>"><%= blogHomeLabel %></a>
       <a href="<%= galleryHref %>" class="<%= activePath === '/gallery' ? 'is-active' : '' %>" aria-current="<%= activePath === '/gallery' ? 'page' : 'false' %>">Gallery</a>
       <a href="<%= aboutHref %>" class="<%= activePath === '/about' ? 'is-active' : '' %>" aria-current="<%= activePath === '/about' ? 'page' : 'false' %>">About</a>
+      <% if (locals.isAdmin) { %>
+        <form class="nav-logout-form" method="post" action="/admin/logout">
+          <button class="nav-logout-btn" type="submit">Logout</button>
+        </form>
+      <% } %>
     </div>
   </nav>
 </header>

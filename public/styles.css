@@ -101,6 +101,27 @@ a {
   border-color: var(--accent-2);
 }
 
+.nav-logout-form {
+  margin: 0;
+  padding: 0;
+  display: contents;
+}
+
+.nav-logout-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.nav-logout-btn:hover {
+  border-color: var(--accent);
+}
+
 .main-shell {
   max-width: 1100px;
   margin: 0 auto;
@@ -543,8 +564,7 @@ button:disabled,
 
 .hero-profile-image,
 .about-profile-image,
-.admin-profile-preview,
-.admin-cat-card-image {
+.admin-profile-preview {
   width: 100%;
   object-fit: cover;
   border-radius: 14px;
@@ -555,10 +575,6 @@ button:disabled,
 .about-profile-image {
   max-height: 360px;
   box-shadow: var(--shadow-soft);
-}
-
-.admin-cat-card-image {
-  max-height: 140px;
 }
 
 .admin-cat-title {
@@ -859,36 +875,88 @@ button:focus-visible {
 
 .admin-cat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 220px));
   gap: 0.9rem;
+  justify-content: start;
+}
+
+.admin-cat-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 20px;
+}
+
+.admin-cat-card-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .admin-cat-card {
-  border: 1px solid rgba(31, 31, 31, 0.14);
-  border-radius: 14px;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.95), rgba(248, 246, 239, 0.95));
-  padding: 0.95rem;
+  height: 320px;
   display: grid;
-  gap: 0.65rem;
+  grid-template-rows: 1fr auto;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(31, 31, 31, 0.1);
+  background: var(--card);
+  box-shadow: 0 8px 22px rgba(31, 31, 31, 0.09);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 
-.admin-cat-card h2 {
-  margin: 0;
+.admin-cat-card-link:hover .admin-cat-card,
+.admin-cat-card-link:focus-visible .admin-cat-card {
+  transform: translateY(-6px) rotate(-1.35deg);
+  box-shadow:
+    0 18px 30px rgba(31, 31, 31, 0.15),
+    0 8px 18px rgba(224, 122, 95, 0.2);
+  border-color: rgba(224, 122, 95, 0.38);
+}
+
+.admin-cat-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 31, 31, 0.08);
+  display: block;
+}
+
+.admin-cat-card-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(248, 246, 239, 0.95), rgba(224, 220, 210, 0.6));
+  border: 1px dashed rgba(31, 31, 31, 0.18);
+}
+
+.admin-cat-card-placeholder-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.3;
+}
+
+.admin-cat-card-title {
+  margin: 0 0.2rem 0.25rem;
+  line-height: 1.2;
   font-family: "Outfit", "DM Sans", sans-serif;
-  color: var(--accent-2);
 }
 
-.admin-cat-card p {
-  margin: 0;
+.admin-cat-card-name {
+  font-size: 1rem;
+  font-weight: 800;
 }
 
-.admin-cat-card .button-primary,
-.admin-cat-card .button-ghost {
-  width: fit-content;
+.admin-cat-card-sep {
+  font-size: 0.88rem;
 }
 
-.admin-cat-meta {
-  font-size: 0.82rem;
+.admin-cat-card-subtitle {
+  font-size: 0.78rem;
+  font-weight: 600;
   color: #5b5b5b;
 }
 

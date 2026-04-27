@@ -204,36 +204,36 @@
         </div>
       <% } %>
     <% } else { %>
-      <div class="admin-toolbar">
-        <a class="button-ghost" href="/admin/gallery">Manage Gallery</a>
-        <form method="post" action="/admin/logout">
-          <button class="button-ghost" type="submit">Logout</button>
-        </form>
-      </div>
-
       <% if (newCatRequested) { %>
         <p class="admin-success" role="status">New cat management UI is coming next. Use this card as your placeholder for now.</p>
       <% } %>
 
       <section class="admin-cat-grid" aria-label="Cat list">
         <% cats.forEach((cat) => { %>
-          <article class="admin-cat-card">
-            <% if (cat.profileImage && cat.profileImage.src) { %>
-              <img class="admin-cat-card-image" src="<%= cat.profileImage.src %>" alt="<%= cat.profileImage.alt %>" loading="lazy" />
-            <% } %>
-            <h2><%= cat.name %></h2>
-            <p class="admin-cat-title"><%= cat.title || `${cat.name}'s Logbook` %></p>
-            <p><%= cat.description || "No description yet." %></p>
-            <p class="admin-cat-meta"><%= cat.postCount %> post<%= cat.postCount === 1 ? "" : "s" %></p>
-            <a class="button-primary" href="/admin?catId=<%= cat.id %>&tab=details">Manage <%= cat.name %></a>
-          </article>
+          <a class="admin-cat-card-link" href="/admin?catId=<%= cat.id %>&tab=details">
+            <article class="admin-cat-card">
+              <% if (cat.profileImage && cat.profileImage.src) { %>
+                <img class="admin-cat-card-image" src="<%= cat.profileImage.src %>" alt="<%= cat.profileImage.alt %>" loading="lazy" />
+              <% } else { %>
+                <div class="admin-cat-card-placeholder"></div>
+              <% } %>
+              <h2 class="admin-cat-card-title">
+                <span class="admin-cat-card-name"><%= cat.name %></span>
+                <span class="admin-cat-card-sep"> &ndash; </span>
+                <span class="admin-cat-card-subtitle"><%= cat.title || `${cat.name}'s Logbook` %></span>
+              </h2>
+            </article>
+          </a>
         <% }) %>
 
-        <article class="admin-cat-card admin-cat-card-new">
-          <h2>New Cat</h2>
-          <p>Add another cat profile and begin managing a new set of posts and images.</p>
-          <a class="button-ghost" href="/admin?newCat=1">Set Up New Cat</a>
-        </article>
+        <a class="admin-cat-card-link" href="/admin?newCat=1">
+          <article class="admin-cat-card admin-cat-card-new">
+            <div class="admin-cat-card-placeholder admin-cat-card-placeholder-new"><img src="/images/icons/add.svg" width="48" height="48" alt="" /></div>
+            <h2 class="admin-cat-card-title">
+              <span class="admin-cat-card-name">New Cat</span>
+            </h2>
+          </article>
+        </a>
       </section>
     <% } %>
   </section>
