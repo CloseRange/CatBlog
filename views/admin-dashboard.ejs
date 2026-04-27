@@ -58,10 +58,10 @@
           <input id="catName" name="name" type="text" value="<%= selectedCat.name %>" required />
 
           <div class="ai-label-row">
-            <label for="catTitle">Title</label>
             <% if (locals.aiEnabled) { %>
-              <button type="button" class="ai-field-btn" data-field="title" data-target="catTitle" aria-label="AI fill Title"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+              <button type="button" class="ai-field-btn" data-field="title" data-target="catTitle" aria-label="AI fill Title"><img src="/images/icons/ai.svg" width="14" height="14" alt="" /></button>
             <% } %>
+            <label for="catTitle">Title</label>
           </div>
           <input
             id="catTitle"
@@ -73,10 +73,10 @@
           />
 
           <div class="ai-label-row">
-            <label for="catTag">Tag</label>
             <% if (locals.aiEnabled) { %>
-              <button type="button" class="ai-field-btn" data-field="tag" data-target="catTag" aria-label="AI fill Tag"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+              <button type="button" class="ai-field-btn" data-field="tag" data-target="catTag" aria-label="AI fill Tag"><img src="/images/icons/ai.svg" width="14" height="14" alt="" /></button>
             <% } %>
+            <label for="catTag">Tag</label>
           </div>
           <input
             id="catTag"
@@ -91,26 +91,26 @@
           <p class="admin-hint">Slug stays stable because it maps to this cat's routes and bucket.</p>
 
           <div class="ai-label-row">
-            <label for="catBackstory">Backstory</label>
             <% if (locals.aiEnabled) { %>
-              <button type="button" class="ai-field-btn" data-field="backstory" data-target="catBackstory" aria-label="AI fill Backstory"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+              <button type="button" class="ai-field-btn" data-field="backstory" data-target="catBackstory" aria-label="AI fill Backstory"><img src="/images/icons/ai.svg" width="14" height="14" alt="" /></button>
             <% } %>
+            <label for="catBackstory">Backstory</label>
           </div>
           <textarea id="catBackstory" name="backstory" rows="4" required><%= selectedCat.backstory || "" %></textarea>
 
           <div class="ai-label-row">
-            <label for="catDescription">Description</label>
             <% if (locals.aiEnabled) { %>
-              <button type="button" class="ai-field-btn" data-field="description" data-target="catDescription" data-supports-posts="true" aria-label="AI fill Description"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+              <button type="button" class="ai-field-btn" data-field="description" data-target="catDescription" data-supports-posts="true" aria-label="AI fill Description"><img src="/images/icons/ai.svg" width="14" height="14" alt="" /></button>
             <% } %>
+            <label for="catDescription">Description</label>
           </div>
           <textarea id="catDescription" name="description" rows="5" required><%= selectedCat.description || "" %></textarea>
 
           <div class="ai-label-row">
-            <label for="catAbout">About Page Content</label>
             <% if (locals.aiEnabled) { %>
-              <button type="button" class="ai-field-btn" data-field="about" data-target="catAbout" data-supports-posts="true" aria-label="AI fill About Page Content"><img src="/images/icons/ai.svg" width="16" height="16" alt="" /></button>
+              <button type="button" class="ai-field-btn" data-field="about" data-target="catAbout" data-supports-posts="true" aria-label="AI fill About Page Content"><img src="/images/icons/ai.svg" width="14" height="14" alt="" /></button>
             <% } %>
+            <label for="catAbout">About Page Content</label>
           </div>
           <textarea
             id="catAbout"
@@ -168,22 +168,6 @@
 
           <button class="button-primary" type="submit">Save Details</button>
         </form>
-
-        <% if (locals.aiEnabled) { %>
-        <div class="ai-field-overlay" id="aiFieldOverlay" hidden>
-          <div class="ai-field-popup" role="dialog" aria-modal="true" aria-labelledby="aiFieldPopupTitle">
-            <h3 class="ai-field-popup-title" id="aiFieldPopupTitle">Fill with AI</h3>
-            <p class="ai-field-popup-hint">Describe what you want. If there&rsquo;s already content in the field you can reference it (e.g. &ldquo;make this more funny&rdquo;).</p>
-            <textarea id="aiFieldPopupPrompt" class="ai-field-popup-textarea" rows="4" placeholder="Describe what you want..."></textarea>
-            <p class="admin-error ai-field-popup-error" id="aiFieldPopupError" hidden></p>
-            <div class="ai-field-popup-actions">
-              <button type="button" class="button-primary" id="aiFieldPopupSubmit">Generate</button>
-              <button type="button" class="button-ghost" id="aiFieldPopupFromPosts" hidden>Generate from All Posts</button>
-              <button type="button" class="button-ghost" id="aiFieldPopupCancel">Cancel</button>
-            </div>
-          </div>
-        </div>
-        <% } %>
       <% } %>
 
       <% if (activeTab === "posts") { %>
@@ -258,6 +242,19 @@
 <%- include("partials/footer") %>
 
 <% if (locals.aiEnabled && selectedCat && activeTab === 'details') { %>
+<div class="ai-field-overlay" id="aiFieldOverlay" hidden>
+  <div class="ai-field-popup" role="dialog" aria-modal="true" aria-labelledby="aiFieldPopupTitle">
+    <h3 class="ai-field-popup-title" id="aiFieldPopupTitle">Fill with AI</h3>
+    <p class="ai-field-popup-hint">Describe what you want. If there&rsquo;s already content in the field you can reference it (e.g. &ldquo;make this more funny&rdquo;).</p>
+    <textarea id="aiFieldPopupPrompt" class="ai-field-popup-textarea" rows="4" placeholder="Describe what you want..."></textarea>
+    <p class="admin-error ai-field-popup-error" id="aiFieldPopupError" hidden></p>
+    <div class="ai-field-popup-actions">
+      <button type="button" class="button-primary" id="aiFieldPopupSubmit">Generate</button>
+      <button type="button" class="button-ghost" id="aiFieldPopupFromPosts" hidden>Generate from All Posts</button>
+      <button type="button" class="button-ghost" id="aiFieldPopupCancel">Cancel</button>
+    </div>
+  </div>
+</div>
 <script>
 (function () {
   var overlay = document.getElementById("aiFieldOverlay");
