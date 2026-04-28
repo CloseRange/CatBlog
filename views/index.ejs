@@ -2,6 +2,7 @@
 <%- include("partials/nav") %>
 <% const basePath = typeof siteBasePath !== 'undefined' ? siteBasePath : ''; %>
 <% const postBase = basePath ? `${basePath}/post` : '/post'; %>
+<% const aboutHref = basePath ? `${basePath}/about` : '/about'; %>
 
 <main id="main-content" class="main-shell">
   <section class="hero reveal-up">
@@ -18,6 +19,7 @@
           <% if (featuredPost) { %>
             <a class="button-primary" href="<%= postBase %>/<%= featuredPost.slug %>">Read Featured Entry</a>
           <% } %>
+          <a class="button-ghost" href="<%= aboutHref %>">About <%= siteCat ? siteCat.name : 'Java' %></a>
         </div>
       </div>
 
