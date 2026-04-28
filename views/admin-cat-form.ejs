@@ -1,0 +1,48 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<main id="main-content" class="main-shell">
+  <section class="section-head reveal-up">
+    <p class="eyebrow">Admin</p>
+    <h1>Create Cat</h1>
+    <p>Create a new cat profile, then manage posts and gallery from the dashboard.</p>
+  </section>
+
+  <section class="about-card admin-main-panel reveal-up" style="--delay: 70ms">
+    <div class="admin-toolbar">
+      <a class="read-link" href="/admin">Back to Admin</a>
+    </div>
+
+    <% if (error) { %>
+      <p class="admin-error" role="alert"><%= error %></p>
+    <% } %>
+
+    <form class="admin-form-grid admin-create-cat-form" method="post" action="/admin/cat/save">
+      <label for="newCatName">Name</label>
+      <input id="newCatName" name="name" type="text" value="<%= formData.name || '' %>" placeholder="Milo" required />
+
+      <label for="newCatSlug">Slug (optional)</label>
+      <input id="newCatSlug" name="slug" type="text" value="<%= formData.slug || '' %>" placeholder="milo" />
+      <p class="admin-hint">If empty, slug is generated from the name.</p>
+
+      <label for="newCatTitle">Title</label>
+      <input id="newCatTitle" name="title" type="text" value="<%= formData.title || '' %>" placeholder="The chief biscuit inspector" required />
+
+      <label for="newCatTag">Tag</label>
+      <input id="newCatTag" name="tag" type="text" value="<%= formData.tag || '' %>" placeholder="Rescue Legend" />
+
+      <label for="newCatBackstory">Backstory</label>
+      <textarea id="newCatBackstory" name="backstory" rows="4" required><%= formData.backstory || "" %></textarea>
+
+      <label for="newCatDescription">Description</label>
+      <textarea id="newCatDescription" name="description" rows="4" required><%= formData.description || "" %></textarea>
+
+      <label for="newCatAbout">About Page Content</label>
+      <textarea id="newCatAbout" name="about" rows="8"><%= formData.about || "" %></textarea>
+
+      <button class="button-primary" type="submit">Create Cat</button>
+    </form>
+  </section>
+</main>
+
+<%- include("partials/footer") %>

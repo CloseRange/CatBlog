@@ -33,14 +33,14 @@
           : 'This memorial site preserves her memory through posts and images managed in Supabase, so updates are easy while keeping the archive focused.' %>
       </p>
       <p>
-        Every page under <code>/java</code> is dedicated to <%= siteCat ? siteCat.name : 'Java' %>'s archive.
+        Every page under <code><%= siteBasePath || '/java' %></code> is dedicated to <%= siteCat ? siteCat.name : 'Java' %>'s archive.
       </p>
     <% } %>
 
     <div class="about-highlights">
       <article>
         <h2>What's preserved</h2>
-        <p>Java's posts, moods, and memories are kept in the same Supabase-backed workflow used by admin.</p>
+        <p><%= siteCat ? siteCat.name : 'Java' %>'s posts, moods, and memories are kept in the same Supabase-backed workflow used by admin.</p>
       </article>
       <article>
         <h2>Media archive</h2>
@@ -48,7 +48,7 @@
       </article>
       <article>
         <h2>Blog selector</h2>
-        <p>The root page acts as a directory so visitors can choose Java's blog or future cat blogs.</p>
+        <p>The root page acts as a directory so visitors can choose <%= siteCat ? `${siteCat.name}'s blog` : 'this blog' %> or other cat blogs.</p>
       </article>
     </div>
   </section>

@@ -6,6 +6,8 @@ create table if not exists cats (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
+  is_archived boolean not null default false,
+  archived_at timestamptz,
   tag text not null default '',
   title text not null default '',
   backstory text not null default '',
@@ -52,6 +54,12 @@ add column if not exists profile_image_storage_bucket text;
 
 alter table cats
 add column if not exists profile_image_storage_path text;
+
+alter table cats
+add column if not exists is_archived boolean not null default false;
+
+alter table cats
+add column if not exists archived_at timestamptz;
 
 insert into cats (name, slug, tag, title, backstory, description, about)
 values (
@@ -156,6 +164,7 @@ alter table post_images
 alter column storage_bucket set not null;
 
 create index if not exists idx_cats_name on cats(name);
+create index if not exists idx_cats_is_archived on cats(is_archived);
 create index if not exists idx_cats_featured_post_id on cats(featured_post_id);
 create index if not exists idx_posts_date on posts(date desc);
 create index if not exists idx_posts_cat_date on posts(cat_id, date desc);

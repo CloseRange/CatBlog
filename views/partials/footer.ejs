@@ -1,11 +1,14 @@
     <footer class="site-footer">
+      <% const footerCats = Array.isArray(footerCatLinks) ? footerCatLinks : []; %>
       <p>
         CatBlog directory for exploring each cat's blog and preserving Java's memorial archive.
       </p>
       <div class="footer-links">
         <a href="/">Home</a>
-        <a href="/java">Java's Blog</a>
-        <a href="/gallery">Gallery</a>
+        <% footerCats.forEach((cat) => { %>
+          <a href="/<%= cat.slug %>"><%= cat.name %>'s Blog</a>
+        <% }) %>
+        <a href="/gallery">Full Gallery</a>
         <a href="/about">About</a>
         <a href="/admin">Admin</a>
       </div>

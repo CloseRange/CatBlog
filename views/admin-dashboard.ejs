@@ -7,12 +7,14 @@
     <h1><%= selectedCat ? `${selectedCat.name} Manager` : "Choose A Cat" %></h1>
     <p>
       <%= selectedCat
-        ? "Use tabs to manage this cat's details, posts, new entries, and gallery."
+        ? (selectedCat.isArchived
+            ? "This cat is archived. Restore it to resume posting and gallery management."
+            : "Use tabs to manage this cat's details, posts, new entries, and gallery.")
         : "Start by selecting a cat card to manage that cat's posts and images." %>
     </p>
   </section>
 
-  <% if (selectedCat) { %>
+  <% if (selectedCat && !selectedCat.isArchived) { %>
     <section class="reveal-up" style="--delay: 60ms">
       <%- include("partials/admin-cat-tabs") %>
     </section>
@@ -46,8 +48,21 @@
       <% if (catSaved && activeTab === "details") { %>
         <p class="admin-success" role="status">Cat details saved.</p>
       <% } %>
+      <% if (archived) { %>
+        <p class="admin-success" role="status">Cat archived. It is hidden from public pages and can be restored later.</p>
+      <% } %>
+      <% if (restored) { %>
+        <p class="admin-success" role="status">Cat restored.</p>
+      <% } %>
       <% if (error) { %>
         <p class="admin-error" role="alert"><%= error %></p>
+      <% } %>
+
+      <% if (selectedCat.isArchived) { %>
+        <form method="post" action="/admin/cat/restore">
+          <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
+          <button class="button-primary" type="submit">Restore Cat</button>
+        </form>
       <% } %>
 
       <% if (activeTab === "details") { %>
@@ -182,6 +197,11 @@
 
           <button class="button-primary" type="submit">Save Details</button>
         </form>
+
+        <form method="post" action="/admin/cat/archive" onsubmit="return confirm('Archive this cat? This hides the cat from public pages but keeps all data for later restore.');">
+          <input type="hidden" name="catId" value="<%= selectedCat.id %>" />
+          <button class="button-danger" type="submit">Archive Cat</button>
+        </form>
       <% } %>
 
       <% if (activeTab === "posts") { %>
@@ -223,8 +243,17 @@
         </div>
       <% } %>
     <% } else { %>
-      <% if (newCatRequested) { %>
-        <p class="admin-success" role="status">New cat management UI is coming next. Use this card as your placeholder for now.</p>
+      <% if (catSaved && !selectedCat) { %>
+        <p class="admin-success" role="status">Cat created.</p>
+      <% } %>
+      <% if (archived) { %>
+        <p class="admin-success" role="status">Cat archived. You can restore it from Archived Cats.</p>
+      <% } %>
+      <% if (restored) { %>
+        <p class="admin-success" role="status">Cat restored.</p>
+      <% } %>
+      <% if (catDeleted) { %>
+        <p class="admin-success" role="status">Cat permanently deleted.</p>
       <% } %>
 
       <section class="admin-cat-grid" aria-label="Cat list">
@@ -245,7 +274,7 @@
           </a>
         <% }) %>
 
-        <a class="admin-cat-card-link" href="/admin?newCat=1">
+        <a class="admin-cat-card-link" href="/admin/cat/new">
           <article class="admin-cat-card admin-cat-card-new">
             <div class="admin-cat-card-placeholder admin-cat-card-placeholder-new"><img src="/images/icons/add.svg" width="48" height="48" alt="" /></div>
             <h2 class="admin-cat-card-title">
@@ -254,6 +283,36 @@
           </article>
         </a>
       </section>
+
+      <% if (archivedCats && archivedCats.length) { %>
+        <h2 class="admin-gallery-title">Archived Cats</h2>
+        <section class="admin-cat-grid" aria-label="Archived cat list">
+          <% archivedCats.forEach((cat) => { %>
+            <article class="admin-cat-card admin-cat-card-archived">
+              <% if (cat.profileImage && cat.profileImage.src) { %>
+                <img class="admin-cat-card-image" src="<%= cat.profileImage.src %>" alt="<%= cat.profileImage.alt %>" loading="lazy" />
+              <% } else { %>
+                <div class="admin-cat-card-placeholder"></div>
+              <% } %>
+              <h2 class="admin-cat-card-title">
+                <span class="admin-cat-card-name"><%= cat.name %></span>
+                <span class="admin-cat-card-sep"> &ndash; </span>
+                <span class="admin-cat-card-subtitle">Archived</span>
+              </h2>
+              <div class="admin-cat-card-actions">
+                <form method="post" action="/admin/cat/restore">
+                  <input type="hidden" name="catId" value="<%= cat.id %>" />
+                  <button class="button-primary" type="submit">Restore</button>
+                </form>
+                <form method="post" action="/admin/cat/delete" onsubmit="return confirm('Permanently delete <%= cat.name %>? This removes the cat, all posts, and all images from storage. This cannot be undone.')">
+                  <input type="hidden" name="catId" value="<%= cat.id %>" />
+                  <button class="button-danger" type="submit">Delete Forever</button>
+                </form>
+              </div>
+            </article>
+          <% }) %>
+        </section>
+      <% } %>
 
       <% if (siteSaved) { %>
         <p class="admin-success" role="status">Site about content saved.</p>

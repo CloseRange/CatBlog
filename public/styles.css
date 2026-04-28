@@ -1185,6 +1185,27 @@ button:focus-visible {
   background: linear-gradient(165deg, rgba(255, 251, 233, 0.95), rgba(255, 245, 208, 0.75));
 }
 
+.admin-cat-card-archived {
+  opacity: 0.86;
+}
+
+.admin-cat-card-actions {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.admin-cat-card-actions .button-primary,
+.admin-cat-card-actions .button-danger {
+  width: 100%;
+}
+
+.admin-create-cat-form {
+  margin-top: 1rem;
+  margin-bottom: 1.2rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px dashed rgba(31, 31, 31, 0.2);
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;

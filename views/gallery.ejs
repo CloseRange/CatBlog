@@ -4,7 +4,7 @@
 <main id="main-content" class="main-shell">
   <section class="section-head reveal-up">
     <p class="eyebrow">Photo Gallery</p>
-    <h1>Java's Camera Roll</h1>
+    <h1><%= siteCat ? `${siteCat.name}'s Camera Roll` : 'Camera Roll' %></h1>
   </section>
 
   <% if (!galleryItems.length) { %>
@@ -17,13 +17,13 @@
           Upload images from <a href="/admin/gallery">Admin Gallery</a> and they
           will show up here automatically.
         </p>
-        <p>Suggested folder: <code>java/</code>.</p>
+        <p>Suggested folder: <code><%= siteCat && siteCat.slug ? `${siteCat.slug}/` : 'java/' %></code>.</p>
       <% } %>
     </section>
   <% } %>
 
   <% if (galleryItems.length) { %>
-    <section class="gallery-grid" aria-label="Java photos">
+    <section class="gallery-grid" aria-label="<%= siteCat ? `${siteCat.name} photos` : 'Cat photos' %>">
       <% galleryItems.forEach((item, index) => { %>
         <article class="gallery-card reveal-up" style="--delay: <%= 80 + (index * 60) %>ms">
           <a
