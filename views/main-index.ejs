@@ -2,21 +2,64 @@
 <%- include("partials/nav") %>
 
 <main id="main-content" class="main-shell main-home">
-  <section class="main-hero reveal-up">
-    <p class="main-eyebrow">CatBlog Directory</p>
-    <h1>Pick A Cat Blog To Visit</h1>
-    <p>
-      This home page is now your blog selector. Choose a cat profile to enter
-      that blog.
-    </p>
-    <div class="main-actions">
-      <a class="main-btn" href="/java">Enter Java's Blog</a>
-      <a class="main-btn main-btn-ghost" href="/about">About This Project</a>
-    </div>
-  </section>
+  <% if (recentPosts && recentPosts.length) { %>
+    <section class="main-home-hero reveal-up" aria-label="Recent posts spotlight">
+      <div class="main-home-hero-head">
+        <p class="main-eyebrow">Recent Posts</p>
+        <h1>Fresh From The Cat Chronicles</h1>
+      </div>
+      <div class="home-carousel" data-home-carousel>
+        <div class="home-carousel-track" aria-live="polite">
+          <% recentPosts.forEach((post, index) => { %>
+            <article
+              class="home-slide <%= index === 0 ? 'is-active' : '' %>"
+              data-home-slide
+              data-post-href="<%= post.href %>"
+              tabindex="0"
+              role="link"
+              aria-label="Open post: <%= post.title %>"
+            >
+              <% if (post.coverImage && post.coverImage.src) { %>
+                <img
+                  class="home-slide-image"
+                  src="<%= post.coverImage.src %>"
+                  alt="<%= post.coverImage.alt || post.title %>"
+                  loading="lazy"
+                />
+              <% } %>
+              <div class="home-slide-copy">
+                <p class="home-slide-meta">
+                  <span><%= formatDisplayDate(post.date) %></span>
+                  <% if (post.mood) { %><span>•</span><span><%= post.mood %></span><% } %>
+                </p>
+                <h2><%= post.title %></h2>
+                <p><%= post.shortBody %></p>
+                <p class="home-slide-cta">Read Post</p>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+        <% if (recentPosts.length > 1) { %>
+          <div class="home-carousel-controls">
+            <div class="home-carousel-dots" role="tablist" aria-label="Recent posts slider controls">
+              <% recentPosts.forEach((post, index) => { %>
+                <button
+                  class="home-dot <%= index === 0 ? 'is-active is-progressing' : '' %>"
+                  type="button"
+                  data-carousel-dot="<%= index %>"
+                  aria-label="Show slide <%= index + 1 %>: <%= post.title %>"
+                  aria-selected="<%= index === 0 ? 'true' : 'false' %>"
+                ></button>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
 
   <% if (availableBlogs && availableBlogs.length) { %>
-    <section class="section-head reveal-up" style="--delay: 110ms">
+    <section id="available-blogs" class="section-head reveal-up" style="--delay: 110ms">
       <p class="eyebrow">Available Blogs</p>
       <h2>Choose A Cat</h2>
     </section>

@@ -1158,6 +1158,7 @@ async function saveAdminPost(formData) {
 app.get("/", async (req, res, next) => {
   try {
     const cats = await loadCatProfiles();
+    const allPosts = await loadPosts();
     const availableBlogs = cats.map((cat) => ({
       key: cat.slug,
       name: cat.name,
@@ -1168,6 +1169,17 @@ app.get("/", async (req, res, next) => {
       isLive: cat.slug === "java",
       profileImage: cat.profileImage,
     }));
+    const recentPosts = allPosts.slice(0, 4).map((post) => ({
+      title: post.title,
+      shortBody: post.shortBody,
+      mood: post.mood,
+      date: post.date,
+      coverImage: post.coverImage,
+      href:
+        post.cat && post.cat.slug === "java"
+          ? `/java/post/${post.slug}`
+          : `/post/${post.slug}`,
+    }));
 
     return res.render("main-index", {
       pageTitle: "Choose A Blog",
@@ -1175,6 +1187,7 @@ app.get("/", async (req, res, next) => {
         "Choose which cat blog to visit. Java's memorial blog is available now, and more cats can be added later.",
       currentPath: "/",
       availableBlogs,
+      recentPosts,
       siteName: "CatBlog Directory",
       siteBrand: "CatBlog Directory",
       siteBasePath: "",
@@ -1192,6 +1205,19 @@ app.get("/about", (req, res) => {
     metaDescription:
       "About the CatBlog directory and how each cat blog is organized.",
     currentPath: "/about",
+    siteName: "CatBlog Directory",
+    siteBrand: "CatBlog Directory",
+    siteBasePath: "",
+    isJavaSite: false,
+    stylesheetPath: "/styles.css",
+  });
+});
+
+app.get("/contact", (req, res) => {
+  res.render("main-contact", {
+    pageTitle: "Contact",
+    metaDescription: "Contact information for the CatBlog directory.",
+    currentPath: "/contact",
     siteName: "CatBlog Directory",
     siteBrand: "CatBlog Directory",
     siteBasePath: "",

@@ -5,6 +5,8 @@
   <% const homeHref = basePath ? basePath : rootHref; %>
   <% const galleryHref = basePath ? `${basePath}/gallery` : '/gallery'; %>
   <% const aboutHref = basePath ? `${basePath}/about` : '/about'; %>
+  <% const contactHref = '/contact'; %>
+  <% const isDirectoryNav = !basePath; %>
   <% const brandLabel = 'CatBlog'; %>
   <% const blogHomeLabel = basePath
     ? (typeof blogNavLabel !== 'undefined' && blogNavLabel
@@ -18,8 +20,12 @@
     </a>
     <div class="nav-links">
       <a href="<%= homeHref %>" class="<%= activePath === '/' ? 'is-active' : '' %>" aria-current="<%= activePath === '/' ? 'page' : 'false' %>"><%= blogHomeLabel %></a>
-      <a href="<%= galleryHref %>" class="<%= activePath === '/gallery' ? 'is-active' : '' %>" aria-current="<%= activePath === '/gallery' ? 'page' : 'false' %>">Gallery</a>
       <a href="<%= aboutHref %>" class="<%= activePath === '/about' ? 'is-active' : '' %>" aria-current="<%= activePath === '/about' ? 'page' : 'false' %>">About</a>
+      <% if (isDirectoryNav) { %>
+        <a href="<%= contactHref %>" class="<%= activePath === '/contact' ? 'is-active' : '' %>" aria-current="<%= activePath === '/contact' ? 'page' : 'false' %>">Contact</a>
+      <% } else { %>
+        <a href="<%= galleryHref %>" class="<%= activePath === '/gallery' ? 'is-active' : '' %>" aria-current="<%= activePath === '/gallery' ? 'page' : 'false' %>">Gallery</a>
+      <% } %>
       <% if (locals.isAdmin) { %>
         <form class="nav-logout-form" method="post" action="/admin/logout">
           <button class="nav-logout-btn" type="submit">Logout</button>
