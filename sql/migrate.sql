@@ -11,6 +11,7 @@ create table if not exists cats (
   backstory text not null default '',
   description text not null default '',
   about text not null default '',
+  featured_post_id uuid,
   profile_image_storage_bucket text,
   profile_image_storage_path text,
   created_at timestamptz not null default now(),
@@ -42,6 +43,9 @@ add column if not exists backstory text not null default '';
 
 alter table cats
 add column if not exists about text not null default '';
+
+alter table cats
+add column if not exists featured_post_id uuid;
 
 alter table cats
 add column if not exists profile_image_storage_bucket text;
@@ -102,6 +106,30 @@ begin
 end;
 $$;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'cats_featured_post_id_fkey'
+  ) then
+    alter table cats
+    add constraint cats_featured_post_id_fkey
+    foreign key (featured_post_id) references posts(id) on delete set null;
+  end if;
+end;
+$$;
+
+update cats c
+set featured_post_id = (
+  select p.id
+  from posts p
+  where p.cat_id = c.id
+  order by p.date desc, p.created_at desc
+  limit 1
+)
+where c.featured_post_id is null;
+
 create table if not exists post_images (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references posts(id) on delete cascade,
@@ -128,6 +156,7 @@ alter table post_images
 alter column storage_bucket set not null;
 
 create index if not exists idx_cats_name on cats(name);
+create index if not exists idx_cats_featured_post_id on cats(featured_post_id);
 create index if not exists idx_posts_date on posts(date desc);
 create index if not exists idx_posts_cat_date on posts(cat_id, date desc);
 create index if not exists idx_post_images_post_id on post_images(post_id);

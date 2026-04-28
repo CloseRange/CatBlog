@@ -120,6 +120,20 @@
           ><%= selectedCat.about || "" %></textarea>
           <p class="admin-hint">This longer text is shown on <code>/<%= selectedCat.slug %>/about</code>.</p>
 
+          <label for="catFeaturedPostId">Featured Post</label>
+          <select id="catFeaturedPostId" name="featuredPostId">
+            <option value="">Use most recent post</option>
+            <% (featuredPostOptions || []).forEach((post) => { %>
+              <option
+                value="<%= post.id %>"
+                <%= selectedCat.featuredPostId === post.id ? "selected" : "" %>
+              >
+                <%= post.title %> (<%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %>)
+              </option>
+            <% }) %>
+          </select>
+          <p class="admin-hint">Choose one post to feature in the hero. Leave as "Use most recent post" for automatic behavior.</p>
+
           <h2 class="admin-gallery-title">Select Profile Photo</h2>
           <p class="admin-hint">Choose an image from this cat's gallery to use on cat cards and profile sections.</p>
 
@@ -190,7 +204,12 @@
               <% } %>
               <% posts.forEach((post) => { %>
                 <tr>
-                  <td><%= post.title %></td>
+                  <td>
+                    <%= post.title %>
+                    <% if (selectedCat && selectedCat.featuredPostId === post.id) { %>
+                      <strong>(Featured)</strong>
+                    <% } %>
+                  </td>
                   <td><%= formatDisplayDate(post.date, { month: "short", day: "numeric", year: "numeric" }) %></td>
                   <td><%= post.mood %></td>
                   <td><code><%= post.slug %></code></td>

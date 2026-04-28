@@ -264,4 +264,13 @@ on conflict (post_id, storage_path) do update set
   is_cover = excluded.is_cover,
   updated_at = now();
 
+update cats c
+set featured_post_id = (
+  select p.id
+  from posts p
+  where p.cat_id = c.id
+  order by p.date desc, p.created_at desc
+  limit 1
+);
+
 commit;

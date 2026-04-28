@@ -43,6 +43,7 @@ const DEFAULT_CAT_PROFILES = [
       "A memorial archive of Java's stories and photos, preserved with love.",
     about:
       "Java was my real cat, and this archive exists to remember her personality, routines, and the love she gave us every day.",
+    featured_post_id: "",
     profile_image_storage_bucket: "",
     profile_image_storage_path: "",
   },
@@ -113,6 +114,9 @@ function normalizeCatRecord(cat) {
   const backstory = String(cat && cat.backstory ? cat.backstory : "").trim();
   const description = String(cat && cat.description ? cat.description : "").trim();
   const about = String(cat && cat.about ? cat.about : "").trim();
+  const featuredPostId = String(
+    (cat && (cat.featured_post_id || cat.featuredPostId)) || ""
+  ).trim();
   const profileImageStoragePath = normalizeFolderPath(
     (cat &&
       (cat.profile_image_storage_path ||
@@ -142,6 +146,7 @@ function normalizeCatRecord(cat) {
     backstory,
     description,
     about,
+    featuredPostId,
     profileImageStorageBucket,
     profileImageStoragePath,
     profileImage: profileImageStoragePath
@@ -163,7 +168,7 @@ async function loadCatProfiles() {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path, created_at"
+      "id, name, slug, tag, title, backstory, description, about, featured_post_id, profile_image_storage_bucket, profile_image_storage_path, created_at"
     )
     .order("name", { ascending: true });
 
@@ -188,7 +193,7 @@ async function fetchCatProfileBySlug(catSlug) {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path"
+      "id, name, slug, tag, title, backstory, description, about, featured_post_id, profile_image_storage_bucket, profile_image_storage_path"
     )
     .eq("slug", normalizedSlug)
     .maybeSingle();
@@ -337,12 +342,12 @@ async function loadPosts(options = {}) {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, title, slug, date, mood, body, cat:cats(id, name, slug), post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
+      "id, title, slug, date, mood, body, cat:cats!posts_cat_id_fkey(id, name, slug), post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
     )
     .order("date", { ascending: false });
 
   if (error) {
-    throw error;
+    throw new Error(error.message || "Failed to load posts.");
   }
 
   const normalized = (data || []).map(normalizePostRow).map(withComputedFields);
@@ -999,7 +1004,7 @@ async function fetchAdminCats() {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path, created_at"
+      "id, name, slug, tag, title, backstory, description, about, featured_post_id, profile_image_storage_bucket, profile_image_storage_path, created_at"
     )
     .order("name", { ascending: true });
 
@@ -1045,7 +1050,7 @@ async function fetchAdminCatById(catId) {
   const { data, error } = await supabase
     .from("cats")
     .select(
-      "id, name, slug, tag, title, backstory, description, about, profile_image_storage_bucket, profile_image_storage_path"
+      "id, name, slug, tag, title, backstory, description, about, featured_post_id, profile_image_storage_bucket, profile_image_storage_path"
     )
     .eq("id", normalizedId)
     .maybeSingle();
@@ -1065,6 +1070,7 @@ async function saveAdminCatDetails(formData) {
   const backstory = String(formData.backstory || "").trim();
   const description = String(formData.description || "").trim();
   const about = String(formData.about || "").trim();
+  const featuredPostId = String(formData.featuredPostId || "").trim();
   const hasProfileImageSelection = Object.prototype.hasOwnProperty.call(
     formData,
     "profileImagePath"
@@ -1103,6 +1109,25 @@ async function saveAdminCatDetails(formData) {
     }
   }
 
+  let validatedFeaturedPostId = null;
+  if (featuredPostId) {
+    const { data: featuredPost, error: featuredPostError } = await supabase
+      .from("posts")
+      .select("id, cat_id")
+      .eq("id", featuredPostId)
+      .maybeSingle();
+
+    if (featuredPostError) {
+      throw new Error(featuredPostError.message);
+    }
+
+    if (!featuredPost || String(featuredPost.cat_id || "") !== catId) {
+      throw new Error("Selected featured post must belong to this cat.");
+    }
+
+    validatedFeaturedPostId = featuredPost.id;
+  }
+
   const { data, error } = await supabase
     .from("cats")
     .update({
@@ -1112,6 +1137,7 @@ async function saveAdminCatDetails(formData) {
       backstory,
       description,
       about,
+      featured_post_id: validatedFeaturedPostId,
       profile_image_storage_bucket: profileImageStorageBucket,
       profile_image_storage_path: profileImageStoragePath,
     })
@@ -1165,7 +1191,7 @@ async function fetchAdminPostById(postId) {
 async function fetchPostCatByPostId(postId) {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, cat:cats(id, name, slug)")
+    .select("id, cat:cats!posts_cat_id_fkey(id, name, slug)")
     .eq("id", postId)
     .maybeSingle();
 
@@ -1368,7 +1394,10 @@ app.get("/java", async (req, res, next) => {
   try {
     const allPosts = await loadPosts({ catSlug: "java" });
     const siteCat = await fetchCatProfileBySlug("java");
-    const [featuredPost, ...latestPosts] = allPosts;
+    const featuredPost =
+      (siteCat && siteCat.featuredPostId
+        ? allPosts.find((post) => post.id === siteCat.featuredPostId)
+        : null) || allPosts[0];
     const siteLabel = `${(siteCat && siteCat.name) || "Java"}'s Logbook`;
 
     return res.render("index", {
@@ -1378,7 +1407,7 @@ app.get("/java", async (req, res, next) => {
         "A memorial archive of Java's stories and photos, preserved with love.",
       currentPath: "/",
       featuredPost,
-      posts: latestPosts,
+      posts: allPosts,
       siteCat,
       siteName: siteLabel,
       siteBrand: siteLabel,
@@ -2107,6 +2136,9 @@ app.post(
     } catch (error) {
       const cats = await fetchAdminCats().catch(() => []);
       const selectedCat = await fetchAdminCatById(catId).catch(() => null);
+      const featuredPostOptions = selectedCat
+        ? await fetchAdminPosts(selectedCat.id).catch(() => [])
+        : [];
       const siteSettings = await loadSiteSettings().catch(() => ({
         directoryAbout: String(req.body.directoryAbout || DEFAULT_DIRECTORY_ABOUT),
       }));
@@ -2136,6 +2168,9 @@ app.post(
               backstory: String(req.body.backstory || selectedCat.backstory || ""),
               description: String(req.body.description || selectedCat.description || ""),
               about: String(req.body.about || selectedCat.about || ""),
+              featured_post_id: String(
+                req.body.featuredPostId || selectedCat.featuredPostId || ""
+              ),
               profile_image_storage_bucket:
                 (submittedProfilePath && selectedBucket) ||
                 selectedCat.profileImageStorageBucket ||
@@ -2147,6 +2182,7 @@ app.post(
         cats,
         galleryImages,
         posts: [],
+        featuredPostOptions,
         activeTab,
         error: error.message,
         aiEnabled: AI_ENABLED,
@@ -2178,13 +2214,16 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
       ? await ensureCatBucketExists(selectedCat)
       : "";
     const selectedFolder = selectedCat ? getFolderForCat(selectedCat) : "";
+    const selectedCatPosts = selectedCat
+      ? await fetchAdminPosts(selectedCat.id)
+      : [];
     const galleryImages =
       selectedCat && activeTab === "details"
         ? await listBucketImages(selectedBucket, selectedFolder)
         : [];
     const adminPosts =
       selectedCat && activeTab === "posts"
-        ? await fetchAdminPosts(selectedCat.id)
+        ? selectedCatPosts
         : [];
 
     res.render("admin-dashboard", {
@@ -2198,6 +2237,7 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
       cats,
       galleryImages,
       posts: adminPosts,
+      featuredPostOptions: selectedCatPosts,
       activeTab,
       error: "",
       aiEnabled: AI_ENABLED,
