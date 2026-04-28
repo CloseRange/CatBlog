@@ -5,14 +5,9 @@
   <section class="main-card reveal-up">
     <p class="main-eyebrow">About</p>
     <h1>About The CatBlog Directory</h1>
-    <p>
-      The home page is a selector that routes visitors to a specific cat blog.
-      Right now, Java's memorial blog is live at <a href="/java">/java</a>.
-    </p>
-    <p>
-      Additional cats can be added by creating new route groups and adding a
-      new card to the homepage selector.
-    </p>
+    <% (String(directoryAbout || "").split(/\n\s*\n/).filter(Boolean)).forEach((paragraph) => { %>
+      <p><%= paragraph %></p>
+    <% }) %>
   </section>
 </main>
 

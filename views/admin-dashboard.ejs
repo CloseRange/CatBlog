@@ -235,6 +235,41 @@
           </article>
         </a>
       </section>
+
+      <% if (siteSaved) { %>
+        <p class="admin-success" role="status">Site about content saved.</p>
+      <% } %>
+      <% if (error) { %>
+        <p class="admin-error" role="alert"><%= error %></p>
+      <% } %>
+
+      <form class="admin-form-grid" method="post" action="/admin/site/save">
+        <input type="hidden" name="tab" value="details" />
+
+        <h2 class="admin-gallery-title">Site About Content</h2>
+        <p class="admin-hint">This controls the content shown on the main <code>/about</code> page for the CatBlog directory.</p>
+
+        <div class="ai-label-row">
+          <% if (locals.aiEnabled) { %>
+            <button
+              type="button"
+              class="ai-field-btn"
+              id="aiSiteAboutBtn"
+              aria-label="AI fill Site About Content"
+            ><img src="/images/icons/ai.svg" width="14" height="14" alt="" /></button>
+          <% } %>
+          <label for="siteAbout">Directory About Content</label>
+        </div>
+        <textarea
+          id="siteAbout"
+          name="directoryAbout"
+          rows="8"
+          placeholder="Write the About page story for the CatBlog directory."
+          required
+        ><%= siteAbout || "" %></textarea>
+
+        <button class="button-primary" type="submit">Save Site About</button>
+      </form>
     <% } %>
   </section>
 </main>
@@ -344,6 +379,91 @@
 
   submitBtn.addEventListener("click", function () { generate(false); });
   fromPostsBtn.addEventListener("click", function () { generate(true); });
+  cancelBtn.addEventListener("click", closePopup);
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closePopup(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) closePopup(); });
+}());
+</script>
+<% } %>
+
+<% if (locals.aiEnabled && !selectedCat) { %>
+<div class="ai-field-overlay" id="aiSiteAboutOverlay" hidden>
+  <div class="ai-field-popup" role="dialog" aria-modal="true" aria-labelledby="aiSiteAboutPopupTitle">
+    <h3 class="ai-field-popup-title" id="aiSiteAboutPopupTitle">Generate Site About Content</h3>
+    <p class="ai-field-popup-hint">Describe the voice and content you want on the CatBlog directory About page.</p>
+    <textarea id="aiSiteAboutPrompt" class="ai-field-popup-textarea" rows="4" placeholder="Describe what you want..."></textarea>
+    <p class="admin-error ai-field-popup-error" id="aiSiteAboutError" hidden></p>
+    <div class="ai-field-popup-actions">
+      <button type="button" class="button-primary" id="aiSiteAboutSubmit">Generate</button>
+      <button type="button" class="button-ghost" id="aiSiteAboutCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var openBtn = document.getElementById("aiSiteAboutBtn");
+  var overlay = document.getElementById("aiSiteAboutOverlay");
+  var promptInput = document.getElementById("aiSiteAboutPrompt");
+  var submitBtn = document.getElementById("aiSiteAboutSubmit");
+  var cancelBtn = document.getElementById("aiSiteAboutCancel");
+  var errorEl = document.getElementById("aiSiteAboutError");
+  var targetEl = document.getElementById("siteAbout");
+
+  if (!openBtn || !overlay || !promptInput || !submitBtn || !cancelBtn || !errorEl || !targetEl) {
+    return;
+  }
+
+  function openPopup() {
+    promptInput.value = "";
+    errorEl.hidden = true;
+    errorEl.textContent = "";
+    overlay.hidden = false;
+    promptInput.focus();
+  }
+
+  function closePopup() {
+    overlay.hidden = true;
+  }
+
+  function setLoading(loading) {
+    submitBtn.disabled = loading;
+    cancelBtn.disabled = loading;
+    submitBtn.textContent = loading ? "Generating\u2026" : "Generate";
+  }
+
+  async function generate() {
+    var prompt = promptInput.value.trim();
+    if (!prompt) {
+      errorEl.textContent = "Please enter a prompt.";
+      errorEl.hidden = false;
+      return;
+    }
+    errorEl.hidden = true;
+    setLoading(true);
+    try {
+      var resp = await fetch("/admin/site/ai-about", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: prompt,
+          currentValue: targetEl.value || "",
+        }),
+      });
+      var data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "Generation failed.");
+      targetEl.value = data.result;
+      closePopup();
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.hidden = false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  openBtn.addEventListener("click", openPopup);
+  submitBtn.addEventListener("click", generate);
   cancelBtn.addEventListener("click", closePopup);
   overlay.addEventListener("click", function (e) { if (e.target === overlay) closePopup(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !overlay.hidden) closePopup(); });

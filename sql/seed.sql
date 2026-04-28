@@ -1,5 +1,14 @@
 begin;
 
+insert into site_settings (id, directory_about)
+values (
+  true,
+  'The home page is a selector that routes visitors to a specific cat blog. Right now, Java''s memorial blog is live at /java.\n\nAdditional cats can be added by creating new route groups and adding a new card to the homepage selector.'
+)
+on conflict (id) do update set
+  directory_about = excluded.directory_about,
+  updated_at = now();
+
 with seed_cats (name, slug, tag, title, backstory, description, about) as (
   values
     (

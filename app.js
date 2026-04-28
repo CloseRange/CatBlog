@@ -26,6 +26,10 @@ const OPENAI_PROJECT_ID = String(process.env.OPENAI_PROJECT_ID || "").trim();
 const OPENAI_ORG_ID = String(process.env.OPENAI_ORG_ID || "").trim();
 const AI_ENABLED = Boolean(OPENAI_API_KEY);
 const ALLOWED_AI_FIELDS = ["title", "tag", "backstory", "description", "about"];
+const DEFAULT_DIRECTORY_ABOUT = [
+  "The home page is a selector that routes visitors to a specific cat blog. Right now, Java's memorial blog is live at /java.",
+  "Additional cats can be added by creating new route groups and adding a new card to the homepage selector.",
+].join("\n\n");
 const DEFAULT_CAT_PROFILES = [
   {
     id: "java",
@@ -194,6 +198,47 @@ async function fetchCatProfileBySlug(catSlug) {
   }
 
   return data ? normalizeCatRecord(data) : null;
+}
+
+async function loadSiteSettings() {
+  if (!hasSupabaseConfig() || !supabase) {
+    return {
+      directoryAbout: DEFAULT_DIRECTORY_ABOUT,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("directory_about")
+    .eq("id", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    directoryAbout: String((data && data.directory_about) || DEFAULT_DIRECTORY_ABOUT).trim(),
+  };
+}
+
+async function saveSiteSettings(formData) {
+  const directoryAbout = String(formData.directoryAbout || "").trim();
+  if (!directoryAbout) {
+    throw new Error("Site about content is required.");
+  }
+
+  const { error } = await supabase.from("site_settings").upsert(
+    {
+      id: true,
+      directory_about: directoryAbout,
+    },
+    { onConflict: "id" }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 function normalizeImage(image, fallbackAlt, fallbackBucket) {
@@ -479,6 +524,70 @@ async function generateCatField({ field, prompt, currentValue, catId, usePostsCo
       userContent = prompt;
     }
   }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      temperature: 0.8,
+      messages: [
+        { role: "system", content: systemContent },
+        { role: "user", content: userContent },
+      ],
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    const apiMessage =
+      (payload && payload.error && payload.error.message) || "OpenAI request failed.";
+    const errorCode = payload && payload.error && payload.error.code;
+    const errorType = payload && payload.error && payload.error.type;
+    if (
+      response.status === 429 ||
+      errorCode === "insufficient_quota" ||
+      errorType === "insufficient_quota"
+    ) {
+      throw new Error(
+        "OpenAI quota error. Verify billing is active for the same account as this API key."
+      );
+    }
+    throw new Error(apiMessage);
+  }
+
+  const content =
+    payload &&
+    payload.choices &&
+    payload.choices[0] &&
+    payload.choices[0].message &&
+    payload.choices[0].message.content;
+
+  if (!content) throw new Error("OpenAI returned an empty response.");
+  return String(content).trim();
+}
+
+async function generateSiteAboutField({ prompt, currentValue }) {
+  if (!AI_ENABLED) {
+    throw new Error("OpenAI is not configured. Add OPENAI_API_KEY in .env.");
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${OPENAI_API_KEY}`,
+  };
+  if (/^proj_[a-zA-Z0-9_-]+$/.test(OPENAI_PROJECT_ID)) {
+    headers["OpenAI-Project"] = OPENAI_PROJECT_ID;
+  }
+  if (/^org_[a-zA-Z0-9_-]+$/.test(OPENAI_ORG_ID)) {
+    headers["OpenAI-Organization"] = OPENAI_ORG_ID;
+  }
+
+  const systemContent =
+    "You write content for the About page of a cat-blog directory website. Write clear, welcoming copy in a warm tone. Return only the About page text with no extra commentary.";
+  const userContent = currentValue
+    ? `Current About page content:\n"${currentValue}"\n\nInstruction: ${prompt}`
+    : prompt;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -1199,18 +1308,25 @@ app.get("/", async (req, res, next) => {
   }
 });
 
-app.get("/about", (req, res) => {
-  res.render("main-about", {
-    pageTitle: "About",
-    metaDescription:
-      "About the CatBlog directory and how each cat blog is organized.",
-    currentPath: "/about",
-    siteName: "CatBlog Directory",
-    siteBrand: "CatBlog Directory",
-    siteBasePath: "",
-    isJavaSite: false,
-    stylesheetPath: "/styles.css",
-  });
+app.get("/about", async (req, res, next) => {
+  try {
+    const siteSettings = await loadSiteSettings();
+
+    res.render("main-about", {
+      pageTitle: "About",
+      metaDescription:
+        "About the CatBlog directory and how each cat blog is organized.",
+      currentPath: "/about",
+      siteName: "CatBlog Directory",
+      siteBrand: "CatBlog Directory",
+      siteBasePath: "",
+      isJavaSite: false,
+      stylesheetPath: "/styles.css",
+      directoryAbout: siteSettings.directoryAbout,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/contact", (req, res) => {
@@ -1928,6 +2044,55 @@ app.post(
 );
 
 app.post(
+  "/admin/site/ai-about",
+  ensureSupabaseForAdmin,
+  requireAdmin,
+  async (req, res) => {
+    const prompt = String(req.body.prompt || "").trim();
+    const currentValue = String(req.body.currentValue || "").trim();
+
+    if (!AI_ENABLED) {
+      return res.status(400).json({ error: "AI is not configured. Add OPENAI_API_KEY in .env." });
+    }
+    if (!prompt) {
+      return res.status(400).json({ error: "A prompt is required." });
+    }
+
+    try {
+      const result = await generateSiteAboutField({ prompt, currentValue });
+      return res.json({ result });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+app.post(
+  "/admin/site/save",
+  ensureSupabaseForAdmin,
+  requireAdmin,
+  async (req, res, next) => {
+    const catId = String(req.body.catId || "").trim();
+    const tab = String(req.body.tab || "details").trim().toLowerCase() === "posts"
+      ? "posts"
+      : "details";
+
+    try {
+      await saveSiteSettings(req.body);
+      const query = new URLSearchParams();
+      if (catId) {
+        query.set("catId", catId);
+      }
+      query.set("tab", tab);
+      query.set("siteSaved", "1");
+      return res.redirect(`/admin?${query.toString()}`);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+app.post(
   "/admin/cat/save",
   ensureSupabaseForAdmin,
   requireAdmin,
@@ -1942,6 +2107,9 @@ app.post(
     } catch (error) {
       const cats = await fetchAdminCats().catch(() => []);
       const selectedCat = await fetchAdminCatById(catId).catch(() => null);
+      const siteSettings = await loadSiteSettings().catch(() => ({
+        directoryAbout: String(req.body.directoryAbout || DEFAULT_DIRECTORY_ABOUT),
+      }));
       const selectedBucket = selectedCat
         ? await ensureCatBucketExists(selectedCat).catch(() => "")
         : "";
@@ -1982,6 +2150,8 @@ app.post(
         activeTab,
         error: error.message,
         aiEnabled: AI_ENABLED,
+        siteSaved: false,
+        siteAbout: siteSettings.directoryAbout,
       });
     }
   }
@@ -1990,6 +2160,7 @@ app.post(
 app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) => {
   try {
     const cats = await fetchAdminCats();
+    const siteSettings = await loadSiteSettings();
     const requestedCatId = String(req.query.catId || "").trim();
     const requestedTab = String(req.query.tab || "").trim().toLowerCase();
     const selectedCat = requestedCatId
@@ -2030,6 +2201,8 @@ app.get("/admin", ensureSupabaseForAdmin, requireAdmin, async (req, res, next) =
       activeTab,
       error: "",
       aiEnabled: AI_ENABLED,
+      siteSaved: req.query.siteSaved === "1",
+      siteAbout: siteSettings.directoryAbout,
     });
   } catch (error) {
     next(error);

@@ -17,6 +17,20 @@ create table if not exists cats (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists site_settings (
+  id boolean primary key default true check (id = true),
+  directory_about text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+insert into site_settings (id, directory_about)
+values (
+  true,
+  'The home page is a selector that routes visitors to a specific cat blog. Right now, Java''s memorial blog is live at /java.\n\nAdditional cats can be added by creating new route groups and adding a new card to the homepage selector.'
+)
+on conflict (id) do nothing;
+
 alter table cats
 add column if not exists title text not null default '';
 
@@ -136,6 +150,12 @@ $$;
 drop trigger if exists posts_set_updated_at on posts;
 create trigger posts_set_updated_at
 before update on posts
+for each row
+execute function set_updated_at_timestamp();
+
+drop trigger if exists site_settings_set_updated_at on site_settings;
+create trigger site_settings_set_updated_at
+before update on site_settings
 for each row
 execute function set_updated_at_timestamp();
 
