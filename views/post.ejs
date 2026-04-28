@@ -1,9 +1,10 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
 <% const basePath = typeof siteBasePath !== 'undefined' ? siteBasePath : ''; %>
+<% const postLayout = post && post.imageLayout === 'side' ? 'side' : 'top'; %>
 
 <main id="main-content" class="main-shell">
-  <article class="single-post reveal-up">
+  <article class="single-post reveal-up <%= postLayout === 'side' ? 'is-side-layout' : '' %>">
     <header class="single-post-header">
       <p class="eyebrow">Java's Journal</p>
       <h1><%= post.title %></h1>
@@ -13,6 +14,7 @@
         <span><%= post.mood %></span>
       </p>
     </header>
+    <div class="post-layout-grid">
     <% if (post.images.length) { %>
       <section class="post-gallery" aria-label="Photos for this post">
         <% post.images.forEach((image) => { %>
@@ -25,10 +27,13 @@
         <% }) %>
       </section>
     <% } %>
-    <% post.body.split("\n").forEach((paragraph) => { %>
-      <p><%= paragraph %></p>
-    <% }) %>
-    <a class="read-link" href="<%= basePath || '/' %>">Back to all posts</a>
+      <div class="single-post-content">
+        <% post.body.split("\n").forEach((paragraph) => { %>
+          <p><%= paragraph %></p>
+        <% }) %>
+        <a class="read-link" href="<%= basePath || '/' %>">Back to all posts</a>
+      </div>
+    </div>
   </article>
 </main>
 

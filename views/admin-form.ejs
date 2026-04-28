@@ -35,6 +35,7 @@
       <input type="hidden" name="slug" value="<%= formData.slug %>" />
       <input type="hidden" name="date" value="<%= formData.date %>" />
       <input type="hidden" name="mood" value="<%= formData.mood %>" />
+      <input type="hidden" name="imageLayout" value="<%= formData.imageLayout || 'top' %>" />
       <input type="hidden" name="body" value="<%= formData.body %>" />
       <input type="hidden" name="selectedPath" value="<%= selectedPath || "" %>" />
 
@@ -63,6 +64,12 @@
 
       <label for="mood">Mood</label>
       <input id="mood" name="mood" type="text" value="<%= formData.mood %>" required />
+
+      <label for="imageLayout">Post Image Layout</label>
+      <select id="imageLayout" name="imageLayout">
+        <option value="top" <%= (formData.imageLayout || 'top') === 'top' ? 'selected' : '' %>>Top Facing</option>
+        <option value="side" <%= (formData.imageLayout || 'top') === 'side' ? 'selected' : '' %>>Right Facing</option>
+      </select>
 
       <label for="body">Body</label>
       <textarea id="body" name="body" rows="8" required><%= formData.body %></textarea>
@@ -102,6 +109,14 @@
 
       <button class="button-primary" type="submit">Save Post</button>
     </form>
+
+    <% if (mode === "edit" && formData.postId) { %>
+      <form class="admin-form-grid" method="post" action="/admin/delete" onsubmit="return confirm('Are you sure you want to delete this post? This cannot be undone.');">
+        <input type="hidden" name="postId" value="<%= formData.postId %>" />
+        <input type="hidden" name="catId" value="<%= formData.catId || catId || (selectedCat && selectedCat.id) || "" %>" />
+        <button class="button-danger" type="submit" style="background-color: #d32f2f; color: white;">Delete Post</button>
+      </form>
+    <% } %>
   </section>
 </main>
 

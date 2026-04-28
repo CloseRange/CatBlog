@@ -117,6 +117,10 @@ function createSlug(title) {
     .replace(/\s+/g, "-");
 }
 
+function normalizeImageLayout(value) {
+  return String(value || "").trim().toLowerCase() === "side" ? "side" : "top";
+}
+
 function normalizeCatRecord(cat) {
   const name = String(cat && cat.name ? cat.name : "").trim();
   const slug = String(cat && cat.slug ? cat.slug : "").trim().toLowerCase();
@@ -308,6 +312,7 @@ function normalizePostRow(post) {
 
   return {
     ...post,
+    imageLayout: normalizeImageLayout(post.imageLayout || post.image_layout),
     images,
     coverImage,
   };
@@ -329,6 +334,7 @@ function withComputedFields(post) {
 
   return {
     ...post,
+    imageLayout: normalizeImageLayout(post.imageLayout || post.image_layout),
     slug: post.slug || createSlug(post.title),
     shortBody:
       post.body.length > 210 ? `${post.body.slice(0, 210).trim()}...` : post.body,
@@ -359,7 +365,7 @@ async function loadPosts(options = {}) {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, title, slug, date, mood, body, cat:cats!posts_cat_id_fkey(id, name, slug, is_archived), post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
+      "id, title, slug, date, mood, body, image_layout, cat:cats!posts_cat_id_fkey(id, name, slug, is_archived), post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
     )
     .order("date", { ascending: false });
 
@@ -1240,7 +1246,7 @@ async function fetchAdminPostById(postId) {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "id, title, slug, date, mood, body, cat_id, post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
+      "id, title, slug, date, mood, body, image_layout, cat_id, post_images(id, storage_bucket, storage_path, alt, caption, sort_order, is_cover)"
     )
     .eq("id", postId)
     .single();
@@ -1276,6 +1282,7 @@ async function saveAdminPost(formData) {
   const body = String(formData.body || "").trim();
   const date = String(formData.date || "").trim();
   const slug = String(formData.slug || "").trim() || createSlug(title);
+  const imageLayout = normalizeImageLayout(formData.imageLayout);
   const postId = String(formData.postId || "").trim();
   const catId = String(formData.catId || "").trim();
 
@@ -1298,7 +1305,7 @@ async function saveAdminPost(formData) {
   if (savedPostId) {
     const { data, error } = await supabase
       .from("posts")
-      .update({ title, slug, mood, date, body, cat_id: catId })
+      .update({ title, slug, mood, date, body, image_layout: imageLayout, cat_id: catId })
       .eq("id", savedPostId)
       .select("id")
       .single();
@@ -1311,7 +1318,7 @@ async function saveAdminPost(formData) {
   } else {
     const { data, error } = await supabase
       .from("posts")
-      .insert({ title, slug, mood, date, body, cat_id: catId })
+      .insert({ title, slug, mood, date, body, image_layout: imageLayout, cat_id: catId })
       .select("id")
       .single();
 
@@ -1434,8 +1441,28 @@ app.get("/contact", (req, res) => {
 
 app.get("/gallery", async (req, res, next) => {
   try {
-    const allPosts = await loadPosts();
-    const galleryItems = buildGalleryItemsFromPosts(allPosts);
+    let galleryItems = [];
+
+    if (hasSupabaseConfig() && supabase) {
+      const cats = await loadCatProfiles();
+      const allImages = await Promise.all(
+        cats.map(async (cat) => {
+          const bucket = getBucketForCat(cat);
+          const folder = getFolderForCat(cat);
+          const images = await listBucketImages(bucket, folder).catch(() => []);
+          return images.map((image) => ({
+            src: image.publicUrl,
+            alt: `Photo of ${cat.name}`,
+            caption: "",
+            storagePath: image.storagePath,
+          }));
+        })
+      );
+      galleryItems = allImages.flat();
+    } else {
+      const allPosts = await loadPosts();
+      galleryItems = buildGalleryItemsFromPosts(allPosts);
+    }
 
     return res.render("main-gallery", {
       pageTitle: "Gallery",
@@ -1510,8 +1537,23 @@ app.get("/java/about", async (req, res, next) => {
 
 app.get("/java/gallery", async (req, res, next) => {
   try {
-    const allPosts = await loadPosts({ catSlug: "java" });
     const siteCat = await fetchCatProfileBySlug("java");
+    let galleryItems = [];
+
+    if (hasSupabaseConfig() && supabase && siteCat) {
+      const bucket = getBucketForCat(siteCat);
+      const folder = getFolderForCat(siteCat);
+      const storageImages = await listBucketImages(bucket, folder).catch(() => []);
+      galleryItems = storageImages.map((image) => ({
+        src: image.publicUrl,
+        alt: `Photo of ${siteCat.name}`,
+        caption: "",
+        storagePath: image.storagePath,
+      }));
+    } else {
+      const allPosts = await loadPosts({ catSlug: "java" });
+      galleryItems = buildGalleryItemsFromPosts(allPosts);
+    }
 
     return res.render("gallery", {
       pageTitle: `${(siteCat && siteCat.name) || "Java"}'s Photo Gallery`,
@@ -1519,7 +1561,7 @@ app.get("/java/gallery", async (req, res, next) => {
         (siteCat && siteCat.description) ||
         "A memorial gallery of Java's photos.",
       currentPath: "/gallery",
-      galleryItems: buildGalleryItemsFromPosts(allPosts),
+      galleryItems,
       siteCat,
       siteName: "Java's Logbook",
       siteBrand: "Java's Logbook",
@@ -1570,13 +1612,29 @@ app.get("/:catSlug/gallery", async (req, res, next) => {
       return next();
     }
 
-    const allPosts = await loadPosts({ catSlug });
     const siteLabel = `${siteCat.name}'s Logbook`;
+    let galleryItems = [];
+
+    if (hasSupabaseConfig() && supabase) {
+      const bucket = getBucketForCat(siteCat);
+      const folder = getFolderForCat(siteCat);
+      const storageImages = await listBucketImages(bucket, folder).catch(() => []);
+      galleryItems = storageImages.map((image) => ({
+        src: image.publicUrl,
+        alt: `Photo of ${siteCat.name}`,
+        caption: "",
+        storagePath: image.storagePath,
+      }));
+    } else {
+      const allPosts = await loadPosts({ catSlug });
+      galleryItems = buildGalleryItemsFromPosts(allPosts);
+    }
+
     return res.render("gallery", {
       pageTitle: `${siteCat.name}'s Photo Gallery`,
       metaDescription: siteCat.description || `${siteCat.name}'s photo gallery.`,
       currentPath: "/gallery",
-      galleryItems: buildGalleryItemsFromPosts(allPosts),
+      galleryItems,
       siteCat,
       siteName: siteLabel,
       siteBrand: siteLabel,
@@ -1793,6 +1851,7 @@ app.post(
           slug: String(req.body.slug || ""),
           date: String(req.body.date || ""),
           mood: String(req.body.mood || ""),
+          imageLayout: normalizeImageLayout(req.body.imageLayout),
           body: String(req.body.body || ""),
           imagesJson: String(req.body.imagesJson || "[]"),
         },
@@ -1826,6 +1885,7 @@ app.post(
           slug: String(req.body.slug || ""),
           date: String(req.body.date || ""),
           mood: String(req.body.mood || ""),
+          imageLayout: normalizeImageLayout(req.body.imageLayout),
           body: String(req.body.body || ""),
           imagesJson: String(req.body.imagesJson || "[]"),
         },
@@ -1863,6 +1923,7 @@ app.post(
             String(req.body.date || "") ||
             new Date().toISOString().slice(0, 10),
           mood: draft.mood || String(req.body.mood || ""),
+          imageLayout: normalizeImageLayout(req.body.imageLayout),
           body: draft.body || String(req.body.body || ""),
           imagesJson: String(req.body.imagesJson || "[]"),
         },
@@ -1894,6 +1955,7 @@ app.post(
           slug: String(req.body.slug || ""),
           date: String(req.body.date || ""),
           mood: String(req.body.mood || ""),
+          imageLayout: normalizeImageLayout(req.body.imageLayout),
           body: String(req.body.body || ""),
           imagesJson: String(req.body.imagesJson || "[]"),
         },
@@ -2643,6 +2705,7 @@ app.get(
           slug: "",
           date: "",
           mood: "",
+          imageLayout: "top",
           body: "",
           imagesJson: "[]",
         },
@@ -2708,6 +2771,7 @@ app.get(
           slug: post.slug,
           date: formatDateForInput(post.date),
           mood: post.mood,
+          imageLayout: normalizeImageLayout(post.image_layout),
           body: post.body,
           imagesJson: serializeImagesInput(post.post_images),
         },
@@ -2775,6 +2839,7 @@ app.post(
           slug: String(req.body.slug || ""),
           date: String(req.body.date || ""),
           mood: String(req.body.mood || ""),
+          imageLayout: normalizeImageLayout(req.body.imageLayout),
           body: String(req.body.body || ""),
           imagesJson: String(req.body.imagesJson || "[]"),
         },
@@ -2782,6 +2847,50 @@ app.post(
         uploaded: false,
         uploadError: "",
       });
+    }
+  }
+);
+
+app.post(
+  "/admin/delete",
+  ensureSupabaseForAdmin,
+  requireAdmin,
+  async (req, res) => {
+    const postId = String(req.body.postId || "").trim();
+    const catId = String(req.body.catId || "").trim();
+
+    try {
+      if (!postId) {
+        throw new Error("Post ID is required.");
+      }
+
+      // Delete post_images associated with this post
+      const { error: deleteImagesError } = await supabase
+        .from("post_images")
+        .delete()
+        .eq("post_id", postId);
+
+      if (deleteImagesError) {
+        throw new Error(deleteImagesError.message);
+      }
+
+      // Delete the post itself
+      const { error: deletePostError } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId);
+
+      if (deletePostError) {
+        throw new Error(deletePostError.message);
+      }
+
+      return res.redirect(
+        `/admin/dashboard?deleted=1&catId=${encodeURIComponent(catId)}`
+      );
+    } catch (error) {
+      return res.status(400).redirect(
+        `/admin/dashboard?deleteError=${encodeURIComponent(error.message)}&catId=${encodeURIComponent(catId)}`
+      );
     }
   }
 );

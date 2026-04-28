@@ -787,6 +787,16 @@ button:disabled,
   margin: 0.8rem 0;
 }
 
+.post-layout-grid {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.single-post-content,
+.main-post-card .single-post-content {
+  min-width: 0;
+}
+
 .admin-profile-preview {
   max-width: 280px;
   max-height: 280px;
@@ -819,6 +829,43 @@ button:disabled,
   padding: 0.5rem 0.65rem 0.65rem;
   font-size: 0.84rem;
   color: #555;
+}
+
+@media (min-width: 900px) {
+  .single-post.is-side-layout .post-layout-grid,
+  .main-post-card.is-side-layout .post-layout-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.95fr);
+    align-items: start;
+  }
+
+  .single-post.is-side-layout .post-gallery,
+  .main-post-card.is-side-layout .post-gallery {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+    align-self: start;
+    position: sticky;
+    top: 1rem;
+  }
+
+  .single-post.is-side-layout .single-post-content,
+  .main-post-card.is-side-layout .single-post-content {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .single-post.is-side-layout .post-gallery,
+  .main-post-card.is-side-layout .post-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .single-post.is-side-layout .post-gallery img,
+  .main-post-card.is-side-layout .post-gallery img {
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    object-position: center;
+  }
 }
 
 .gallery-cta {

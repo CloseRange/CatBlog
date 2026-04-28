@@ -80,6 +80,7 @@ create table if not exists posts (
   slug text not null unique,
   date date not null,
   mood text not null,
+  image_layout text not null default 'top',
   body text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -87,6 +88,28 @@ create table if not exists posts (
 
 alter table posts
 add column if not exists cat_id uuid;
+
+alter table posts
+add column if not exists image_layout text not null default 'top';
+
+update posts
+set image_layout = 'top'
+where image_layout is null
+  or btrim(image_layout) = '';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'posts_image_layout_check'
+  ) then
+    alter table posts
+    add constraint posts_image_layout_check
+    check (image_layout in ('top', 'side'));
+  end if;
+end;
+$$;
 
 update posts
 set cat_id = (
