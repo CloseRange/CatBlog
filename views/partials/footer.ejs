@@ -1,18 +1,32 @@
     <footer class="site-footer">
       <% const footerCats = Array.isArray(footerCatLinks) ? footerCatLinks : []; %>
-      <p>
-        CatBlog directory for exploring each cat's blog and preserving Java's memorial archive.
-      </p>
-      <div class="footer-links">
-        <a href="/">Home</a>
-        <% footerCats.forEach((cat) => { %>
-          <a href="/<%= cat.slug %>"><%= cat.name %>'s Blog</a>
-        <% }) %>
-        <a href="/gallery">Full Gallery</a>
-        <a href="/about">About</a>
-        <a href="/admin">Admin</a>
+      <div class="site-footer-card">
+        <div class="footer-copy">
+          <p class="footer-eyebrow">CatBlog Directory</p>
+        </div>
+        <div class="footer-nav-groups" aria-label="Footer navigation">
+          <div class="footer-link-group">
+            <p class="footer-link-heading">Explore</p>
+            <div class="footer-links">
+              <a href="/">Home</a>
+              <a href="/gallery">Full Gallery</a>
+              <a href="/about">About</a>
+              <a href="/admin">Admin</a>
+            </div>
+          </div>
+          <% if (footerCats.length) { %>
+            <div class="footer-link-group">
+              <p class="footer-link-heading">Cat Blogs</p>
+              <div class="footer-links">
+                <% footerCats.forEach((cat) => { %>
+                  <a href="/<%= cat.slug %>"><%= cat.name %>'s Blog</a>
+                <% }) %>
+              </div>
+            </div>
+          <% } %>
+        </div>
+        <p class="footer-note">&copy; <%= new Date().getFullYear() %> CatBlog. Built for memorial stories, photo rolls, and very strong cat opinions.</p>
       </div>
-      <p class="footer-note">&copy; <%= new Date().getFullYear() %> CatBlog</p>
     </footer>
     <script src="/script.js"></script>
   </body>
