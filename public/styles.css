@@ -1218,19 +1218,21 @@ button:disabled,
     padding: 0.9rem;
   }
 
-  .home-slide {
+  .home-slide,
+  .home-slide.is-active {
     grid-template-columns: 1fr;
-    gap: 0.65rem;
-  }
-
-  .home-slide-image,
-  .home-slide-copy {
-    grid-column: auto;
   }
 
   .home-slide-image {
-    min-height: 170px;
-    max-height: 195px;
+    display: none;
+  }
+
+  .home-slide-copy {
+    grid-column: 1;
+    border: none;
+    background: none;
+    padding: 0.25rem 0.1rem;
+    box-shadow: none;
   }
 }
 
